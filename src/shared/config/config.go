@@ -14,6 +14,7 @@ type Config struct {
 	Redis    RedisConfig
 	Metrics  MetricsConfig
 	Contact  ContactConfig
+	SQS      SQSConfig
 }
 
 type ServerConfig struct {
@@ -51,6 +52,12 @@ type ContactConfig struct {
 	Email string `mapstructure:"email"`
 }
 
+type SQSConfig struct {
+	QueueURL string `mapstructure:"queue_url"`
+	Region   string `mapstructure:"region"`
+	Enabled  bool   `mapstructure:"enabled"`
+}
+
 func LoadConfig() (*Config, error) {
 	// Cargar variables de entorno desde .env si existe
 	if err := godotenv.Load(); err != nil {
@@ -83,6 +90,10 @@ func LoadConfig() (*Config, error) {
 
 	viper.BindEnv("metrics.enabled", "METRICS_ENABLED")
 	viper.BindEnv("metrics.port", "METRICS_PORT")
+
+	viper.BindEnv("sqs.queue_url", "SQS_QUEUE_URL")
+	viper.BindEnv("sqs.region", "SQS_REGION")
+	viper.BindEnv("sqs.enabled", "SQS_ENABLED")
 
 	// Intentar cargar config.yaml como fallback
 	viper.SetConfigName("config")

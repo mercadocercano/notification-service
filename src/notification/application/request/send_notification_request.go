@@ -6,11 +6,12 @@ import (
 )
 
 type SendNotificationRequest struct {
-	Type      string                 `json:"type" binding:"required"`
-	Action    string                 `json:"action" binding:"required"`
-	Recipient string                 `json:"recipient" binding:"required"`
-	Data      map[string]interface{} `json:"data"`
-	Async     bool                   `json:"async"`
+	NotificationID string                 `json:"notification_id,omitempty"` // Solo para SQS
+	Type           string                 `json:"type" binding:"required"`
+	Action         string                 `json:"action" binding:"required"`
+	Recipient      string                 `json:"recipient" binding:"required"`
+	Data           map[string]interface{} `json:"data"`
+	Async          bool                   `json:"async"`
 }
 
 // Validate realiza validaciones adicionales de negocio

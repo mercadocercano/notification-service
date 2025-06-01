@@ -1,35 +1,68 @@
 # Build stage
-FROM golang:1.21-alpine AS builder
+FROM golang:1.24-alpine AS builder
+
+# Instalar dependencias de build
+RUN apk add --no-cache git ca-certificates tzdata
 
 WORKDIR /app
 
-# Copy go mod and sum files
+# Copy go mod and sum files primero para aprovechar cache de Docker
 COPY go.mod go.sum ./
 
 # Download dependencies
 RUN go mod download
 
-# Copy source code
+# Copiar el código fuente
 COPY . .
 
-# Build the application
-RUN go build -o notification-service src/main.go
+# Build the application con flags de optimización
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags='-w -s -extldflags "-static"' \
+    -a -installsuffix cgo \
+    -o notification-service \
+    ./src/main.go
 
 # Final stage
 FROM alpine:latest
 
-RUN apk --no-cache add ca-certificates
+# Instalar dependencias runtime
+RUN apk --no-cache add \
+    ca-certificates \
+    tzdata \
+    && update-ca-certificates
 
-WORKDIR /root/
+# Crear usuario no-root para seguridad
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -u 1001 -S appuser -G appgroup
 
-# Copy the binary from builder stage
+WORKDIR /app
+
+# Copiar el binario desde builder stage
 COPY --from=builder /app/notification-service .
 
-# Copy config file
+# Copiar archivos de configuración
 COPY --from=builder /app/config ./config
 
-# Expose port
+# Copiar templates de email
+COPY --from=builder /app/templates ./templates
+
+# Crear directorio para logs
+RUN mkdir -p /app/logs && \
+    chown -R appuser:appgroup /app
+
+# Cambiar a usuario no-root
+USER appuser
+
+# Exponer puerto
 EXPOSE 8282
 
-# Run the binary
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8282/api/v1/health || exit 1
+
+# Variables de entorno por defecto
+ENV SERVER_PORT=8282
+ENV SERVER_MODE=release
+
+# Run the application
 CMD ["./notification-service"] 
