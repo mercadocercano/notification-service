@@ -18,6 +18,63 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    networks:
+      - notification-network
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: notification_service
+    environment:
+      # Configuración del servidor
+      SERVER_PORT: 8282
+      SERVER_MODE: release
+      
+      # Configuración de la base de datos
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: notification_service
+      DATABASE_SSL_MODE: disable
+      
+      # Configuración de Resend (reemplaza con tu API key)
+      RESEND_API_KEY: ${RESEND_API_KEY:-your-resend-api-key}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-onboarding@resend.dev}
+      
+      # Configuración de SQS (reemplaza con tus valores)
+      SQS_ENABLED: ${SQS_ENABLED:-false}
+      SQS_QUEUE_URL: ${SQS_QUEUE_URL:-}
+      SQS_REGION: ${SQS_REGION:-us-east-1}
+      
+      # Credenciales AWS (opcional si usas IAM roles)
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      
+      # Configuración de métricas
+      METRICS_ENABLED: true
+      METRICS_PORT: 9090
+    ports:
+      - "8282:8282"
+      - "9090:9090"  # Puerto de métricas
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8282/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - notification-network
+    restart: unless-stopped
 
 volumes:
-  postgres_data: 
+  postgres_data:
+
+networks:
+  notification-network:
+    driver: bridge 

@@ -276,3 +276,128 @@ func (r *postgresNotificationRepository) FindPendingNotifications(ctx context.Co
 	r.logger.Info("Found pending notifications", zap.Int("count", len(notifications)))
 	return notifications, nil
 }
+
+// FindByFilters busca notificaciones por filtros dinámicos
+func (r *postgresNotificationRepository) FindByFilters(ctx context.Context, filters domain.NotificationFilters) ([]*domain.Notification, error) {
+	r.logger.Debug("Finding notifications by filters")
+
+	// Construir query dinámicamente
+	query := `
+		SELECT id, type, action, template_id, recipient, data, status, retry_count, error_message, created_at, updated_at
+		FROM notifications 
+		WHERE 1=1
+	`
+
+	var args []interface{}
+	argIndex := 1
+
+	// Agregar filtros dinámicamente
+	if filters.Type != nil {
+		query += fmt.Sprintf(" AND type = $%d", argIndex)
+		args = append(args, *filters.Type)
+		argIndex++
+	}
+
+	if filters.Action != nil {
+		query += fmt.Sprintf(" AND action = $%d", argIndex)
+		args = append(args, *filters.Action)
+		argIndex++
+	}
+
+	if filters.Recipient != nil {
+		query += fmt.Sprintf(" AND recipient = $%d", argIndex)
+		args = append(args, *filters.Recipient)
+		argIndex++
+	}
+
+	if filters.Status != nil {
+		query += fmt.Sprintf(" AND status = $%d", argIndex)
+		args = append(args, *filters.Status)
+		argIndex++
+	}
+
+	// Ordenar por fecha de creación descendente
+	query += " ORDER BY created_at DESC"
+
+	// Aplicar límite y offset
+	if filters.Limit > 0 {
+		query += fmt.Sprintf(" LIMIT $%d", argIndex)
+		args = append(args, filters.Limit)
+		argIndex++
+	} else {
+		// Límite por defecto
+		query += fmt.Sprintf(" LIMIT $%d", argIndex)
+		args = append(args, 50)
+		argIndex++
+	}
+
+	if filters.Offset > 0 {
+		query += fmt.Sprintf(" OFFSET $%d", argIndex)
+		args = append(args, filters.Offset)
+	}
+
+	r.logger.Debug("Executing query", zap.String("query", query), zap.Any("args", args))
+
+	rows, err := r.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		r.logger.Error("Error finding notifications by filters", zap.Error(err))
+		return nil, fmt.Errorf("error finding notifications by filters: %w", err)
+	}
+	defer rows.Close()
+
+	var notifications []*domain.Notification
+	for rows.Next() {
+		var notification domain.Notification
+		var dataJSON []byte
+		var templateID sql.NullString
+		var errorMessage sql.NullString
+
+		err := rows.Scan(
+			&notification.ID,
+			&notification.Type,
+			&notification.Action,
+			&templateID,
+			&notification.Recipient,
+			&dataJSON,
+			&notification.Status,
+			&notification.RetryCount,
+			&errorMessage,
+			&notification.CreatedAt,
+			&notification.UpdatedAt,
+		)
+
+		if err != nil {
+			r.logger.Error("Error scanning notification row", zap.Error(err))
+			return nil, fmt.Errorf("error scanning notification: %w", err)
+		}
+
+		// Convertir JSON a map
+		if len(dataJSON) > 0 {
+			if err := json.Unmarshal(dataJSON, &notification.Data); err != nil {
+				r.logger.Error("Error unmarshaling notification data", zap.Error(err))
+				continue // Skip this row
+			}
+		}
+
+		// Asignar valores nullable
+		if templateID.Valid {
+			notification.TemplateID = templateID.String
+		}
+		if errorMessage.Valid {
+			notification.Error = errorMessage.String
+		}
+
+		notifications = append(notifications, &notification)
+	}
+
+	if err = rows.Err(); err != nil {
+		r.logger.Error("Error iterating notification rows", zap.Error(err))
+		return nil, fmt.Errorf("error iterating notifications: %w", err)
+	}
+
+	r.logger.Info("Found notifications by filters",
+		zap.Int("count", len(notifications)),
+		zap.Any("filters", filters))
+
+	return notifications, nil
+}

@@ -1,0 +1,51 @@
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# IDE
+.vscode
+.idea
+
+# Logs y cache
+*.log
+logs/
+
+# Archivos temporales
+*.tmp
+*.temp
+
+# Archivos de test
+*_test.go
+test/
+
+# Binarios locales
+bin/
+notification-service
+
+# Variables de entorno locales
+.env
+.env.local
+.env.production
+
+# Documentación (opcional, comentar si quieres incluirla)
+README.md
+docs/
+
+# Postman
+postman/
+
+# Migraciones (ya están en el docker-compose)
+migrations/
+
+# Base de datos local
+*.db
+*.sqlite
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db 
