@@ -1,0 +1,632 @@
+{
+	"info": {
+		"_postman_id": "notification-service-collection-v2",
+		"name": "Notification Service API v2",
+		"description": "Colección completa para el microservicio de notificaciones con soporte para actions y migraciones",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"version": "2.0.0"
+	},
+	"item": [
+		{
+			"name": "Health & Status",
+			"item": [
+				{
+					"name": "Health Check",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has status up\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql(\"up\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": ["{{base_url}}"],
+							"path": ["health"]
+						},
+						"description": "Verifica que el servicio esté funcionando correctamente"
+					}
+				}
+			]
+		},
+		{
+			"name": "Database Migrations",
+			"item": [
+				{
+					"name": "Get Migration Status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has status ready\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql(\"ready\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/migrations/status",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "migrations", "status"]
+						},
+						"description": "Consulta el estado del sistema de migraciones"
+					}
+				},
+				{
+					"name": "Run Database Migrations",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Migration was successful\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.eql(true);",
+									"});",
+									"",
+									"pm.test(\"Response has message\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property(\"message\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/migrations",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "migrations"]
+						},
+						"description": "Ejecuta las migraciones pendientes de la base de datos"
+					}
+				}
+			]
+		},
+		{
+			"name": "Email Notifications",
+			"item": [
+				{
+					"name": "Send Welcome Email",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has notification ID\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property(\"id\");",
+									"    pm.environment.set(\"notification_id\", jsonData.id);",
+									"});",
+									"",
+									"pm.test(\"Response has success message\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include(\"successfully\");",
+									"});",
+									"",
+									"pm.test(\"Status is sent\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql(\"sent\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"email\",\n    \"action\": \"WELCOME\",\n    \"recipient\": \"usuario@ejemplo.com\",\n    \"data\": {\n        \"name\": \"Juan Pérez\",\n        \"company\": \"Mi Empresa\",\n        \"welcome_link\": \"https://miempresa.com/dashboard\"\n    },\n    \"async\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/notifications",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "notifications"]
+						},
+						"description": "Envía un email de bienvenida usando la acción WELCOME"
+					}
+				},
+				{
+					"name": "Send Email Verification",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has success message\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include(\"successfully\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"email\",\n    \"action\": \"EMAIL_VERIFICATION\",\n    \"recipient\": \"usuario@ejemplo.com\",\n    \"data\": {\n        \"name\": \"María García\",\n        \"company\": \"Mi Empresa\",\n        \"token\": \"ABC123XYZ789\",\n        \"verification_link\": \"https://miapp.com/verify?token=ABC123XYZ789\",\n        \"expiry_time\": \"24 horas\"\n    },\n    \"async\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/notifications",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "notifications"]
+						},
+						"description": "Envía un email de verificación usando la acción EMAIL_VERIFICATION"
+					}
+				},
+				{
+					"name": "Send Password Reset",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has success message\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include(\"successfully\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"email\",\n    \"action\": \"PASSWORD_RESET\",\n    \"recipient\": \"usuario@ejemplo.com\",\n    \"data\": {\n        \"name\": \"Carlos López\",\n        \"company\": \"Mi Empresa\",\n        \"resetLink\": \"https://miapp.com/reset-password?token=xyz789\",\n        \"expiry_time\": \"1 hora\"\n    },\n    \"async\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/notifications",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "notifications"]
+						},
+						"description": "Envía un email para restablecer contraseña usando la acción PASSWORD_RESET"
+					}
+				},
+				{
+					"name": "Send Order Confirmation",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has success message\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include(\"successfully\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"email\",\n    \"action\": \"ORDER_CONFIRMATION\",\n    \"recipient\": \"cliente@ejemplo.com\",\n    \"data\": {\n        \"customer_name\": \"Ana Martínez\",\n        \"company\": \"Mi Empresa\",\n        \"company_domain\": \"miempresa.com\",\n        \"order_number\": \"ORD-12345\",\n        \"order_date\": \"15 de Enero, 2024\",\n        \"order_status\": \"Confirmado\",\n        \"payment_method\": \"Tarjeta de crédito\",\n        \"items\": [\n            {\"name\": \"Producto A\", \"quantity\": 2, \"price\": \"149.99\"},\n            {\"name\": \"Producto B\", \"quantity\": 1, \"price\": \"150.00\"}\n        ],\n        \"subtotal\": \"299.99\",\n        \"shipping_cost\": \"15.00\",\n        \"taxes\": \"25.00\",\n        \"total\": \"339.99\",\n        \"shipping_address\": \"Calle Falsa 123, Ciudad, CP 12345\",\n        \"estimated_delivery\": \"3-5 días hábiles\",\n        \"shipping_method\": \"Envío estándar\",\n        \"track_order_url\": \"https://miempresa.com/track/ORD-12345\",\n        \"order_details_url\": \"https://miempresa.com/orders/ORD-12345\",\n        \"support_phone\": \"(555) 123-4567\"\n    },\n    \"async\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/notifications",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "notifications"]
+						},
+						"description": "Envía confirmación de pedido usando la acción ORDER_CONFIRMATION"
+					}
+				},
+				{
+					"name": "Send Shipping Notification",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has success message\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include(\"successfully\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"email\",\n    \"action\": \"SHIPPING_NOTIFICATION\",\n    \"recipient\": \"cliente@ejemplo.com\",\n    \"data\": {\n        \"customer_name\": \"Pedro González\",\n        \"company\": \"Mi Empresa\",\n        \"company_domain\": \"miempresa.com\",\n        \"order_number\": \"ORD-67890\",\n        \"tracking_number\": \"TRK123456789\",\n        \"carrier\": \"Courier Express\",\n        \"tracking_url\": \"https://courier.com/track/TRK123456789\",\n        \"shipping_date\": \"16 de Enero, 2024\",\n        \"estimated_delivery\": \"Mañana antes de las 18:00\",\n        \"delivery_address\": \"Calle Real 456, Ciudad, CP 54321\",\n        \"delivery_instructions\": \"Dejar en la puerta principal si no hay nadie\",\n        \"support_phone\": \"(555) 123-4567\"\n    },\n    \"async\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/notifications",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "notifications"]
+						},
+						"description": "Envía notificación de envío usando la acción SHIPPING_NOTIFICATION"
+					}
+				},
+				{
+					"name": "Send Async Email Notification",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Status is queued for async\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql(\"queued\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"email\",\n    \"action\": \"WELCOME\",\n    \"recipient\": \"async@ejemplo.com\",\n    \"data\": {\n        \"name\": \"Usuario Async\",\n        \"company\": \"Test Company\",\n        \"welcome_link\": \"https://testcompany.com/dashboard\"\n    },\n    \"async\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/notifications",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "notifications"]
+						},
+						"description": "Envía una notificación de forma asíncrona (modo cola)"
+					}
+				}
+			]
+		},
+		{
+			"name": "Notification Status",
+			"item": [
+				{
+					"name": "Get Notification by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 404\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"Response has notification data\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData).to.have.property(\"id\");",
+									"        pm.expect(jsonData).to.have.property(\"status\");",
+									"        pm.expect(jsonData).to.have.property(\"type\");",
+									"        pm.expect(jsonData).to.have.property(\"action\");",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/notifications/{{notification_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "notifications", "{{notification_id}}"]
+						},
+						"description": "Consulta el estado de una notificación específica por ID"
+					}
+				}
+			]
+		},
+		{
+			"name": "Error Testing",
+			"item": [
+				{
+					"name": "Invalid Email Format",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Response has error\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.eql(false);",
+									"    pm.expect(jsonData).to.have.property(\"error\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"email\",\n    \"action\": \"WELCOME\",\n    \"recipient\": \"email-invalido-sin-arroba\",\n    \"data\": {\n        \"name\": \"Usuario Test\"\n    },\n    \"async\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/notifications",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "notifications"]
+						},
+						"description": "Prueba el manejo de errores con formato de email inválido"
+					}
+				},
+				{
+					"name": "Missing Required Fields",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Response has error\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.eql(false);",
+									"    pm.expect(jsonData).to.have.property(\"error\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"email\",\n    \"recipient\": \"usuario@ejemplo.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/notifications",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "notifications"]
+						},
+						"description": "Prueba el manejo de errores con campos requeridos faltantes (action)"
+					}
+				},
+				{
+					"name": "Invalid Action",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Response has error\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.eql(false);",
+									"    pm.expect(jsonData).to.have.property(\"error\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"email\",\n    \"action\": \"INVALID_ACTION\",\n    \"recipient\": \"usuario@ejemplo.com\",\n    \"data\": {\n        \"name\": \"Usuario Test\"\n    },\n    \"async\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/notifications",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "notifications"]
+						},
+						"description": "Prueba el manejo de errores con una acción no válida"
+					}
+				},
+				{
+					"name": "Template Not Found",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 500 or 400\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([400, 500]);",
+									"});",
+									"",
+									"pm.test(\"Response has error\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.eql(false);",
+									"    pm.expect(jsonData).to.have.property(\"error\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"email\",\n    \"action\": \"PAYMENT_REMINDER\",\n    \"recipient\": \"usuario@ejemplo.com\",\n    \"data\": {\n        \"name\": \"Usuario Test\"\n    },\n    \"async\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/notifications",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "notifications"]
+						},
+						"description": "Prueba el manejo de errores cuando un template no existe para la acción"
+					}
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Configuración global antes de cada request",
+					"console.log('Ejecutando request a:', pm.request.url);"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Tests globales después de cada response",
+					"pm.test('Response time is less than 30 seconds', function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(30000);",
+					"});",
+					"",
+					"pm.test('Response has valid JSON structure', function () {",
+					"    pm.response.to.be.json;",
+					"});"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8282",
+			"type": "string",
+			"description": "URL base del servicio de notificaciones"
+		},
+		{
+			"key": "notification_id",
+			"value": "",
+			"type": "string",
+			"description": "ID de notificación para pruebas (se actualiza automáticamente)"
+		}
+	]
+} 

@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tu pedido está en camino</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            background-color: #f8f9fa;
+            padding: 40px 20px;
+        }
+        
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            padding: 48px 40px;
+            text-align: center;
+            color: white;
+        }
+        
+        .logo-area {
+            margin-bottom: 24px;
+        }
+        
+        .company-logo {
+            font-size: 42px;
+            font-weight: 900;
+            color: white;
+            margin-bottom: 24px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            line-height: 1.1;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
+        
+        .content {
+            padding: 48px 40px;
+        }
+        
+        .greeting {
+            font-size: 18px;
+            font-weight: 500;
+            color: #1a1a1a;
+            margin-bottom: 24px;
+        }
+        
+        .description {
+            font-size: 16px;
+            color: #4a5568;
+            margin-bottom: 32px;
+            line-height: 1.7;
+        }
+        
+        .tracking-section {
+            background-color: #eff6ff;
+            border: 2px solid #3b82f6;
+            border-radius: 12px;
+            padding: 32px;
+            text-align: center;
+            margin: 32px 0;
+        }
+        
+        .tracking-icon {
+            font-size: 48px;
+            margin-bottom: 24px;
+        }
+        
+        .tracking-number {
+            background-color: #3b82f6;
+            color: white;
+            padding: 16px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 18px;
+            letter-spacing: 1px;
+            margin-bottom: 24px;
+            word-break: break-all;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white !important;
+            padding: 16px 32px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6);
+            color: white !important;
+        }
+        
+        .order-info {
+            background-color: #f8fafc;
+            border-radius: 8px;
+            padding: 24px;
+            margin: 32px 0;
+        }
+        
+        .order-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .order-icon {
+            margin-right: 8px;
+            color: #3b82f6;
+        }
+        
+        .order-details {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+        
+        .detail-label {
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .detail-value {
+            color: #6b7280;
+            font-weight: 500;
+        }
+        
+        .progress-section {
+            background-color: #f0f9ff;
+            border-left: 4px solid #0ea5e9;
+            padding: 24px;
+            border-radius: 8px;
+            margin: 32px 0;
+        }
+        
+        .progress-title {
+            font-weight: 600;
+            color: #0c4a6e;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .progress-icon {
+            margin-right: 8px;
+            color: #0ea5e9;
+        }
+        
+        .progress-steps {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .progress-step {
+            position: relative;
+            padding: 12px 0 12px 32px;
+            font-size: 14px;
+            color: #0f172a;
+        }
+        
+        .progress-step:before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background-color: #d1d5db;
+        }
+        
+        .progress-step.completed:before {
+            background-color: #10b981;
+            content: "✓";
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .progress-step.current:before {
+            background-color: #3b82f6;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+        
+        .shipping-details-box {
+            background-color: #fefce8;
+            border-left: 4px solid #eab308;
+            padding: 24px;
+            border-radius: 8px;
+            margin: 32px 0;
+        }
+        
+        .shipping-details-title {
+            font-weight: 600;
+            color: #a16207;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .shipping-details-icon {
+            margin-right: 8px;
+            color: #eab308;
+        }
+        
+        .shipping-text {
+            font-size: 14px;
+            color: #713f12;
+            line-height: 1.6;
+        }
+        
+        .contact-section {
+            background-color: #f0fdf4;
+            border-left: 4px solid #22c55e;
+            padding: 24px;
+            border-radius: 8px;
+            margin: 32px 0;
+        }
+        
+        .contact-title {
+            font-weight: 600;
+            color: #15803d;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .contact-icon {
+            margin-right: 8px;
+            color: #22c55e;
+        }
+        
+        .contact-text {
+            font-size: 14px;
+            color: #166534;
+            line-height: 1.6;
+        }
+        
+        .footer {
+            background-color: #f7fafc;
+            padding: 32px 40px;
+            text-align: center;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .footer-text {
+            font-size: 12px;
+            color: #a0aec0;
+            line-height: 1.5;
+        }
+        
+        .footer-text a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+        
+        /* Responsive */
+        @media (max-width: 600px) {
+            body {
+                padding: 20px 10px;
+            }
+            
+            .content, .header {
+                padding: 32px 24px;
+            }
+            
+            .tracking-section, .order-info, .progress-section, .shipping-details-box, .contact-section {
+                padding: 24px;
+            }
+            
+            .header h1 {
+                font-size: 24px;
+            }
+            
+            .order-details {
+                flex-direction: column;
+                margin-bottom: 8px;
+            }
+            
+            .detail-value {
+                margin-top: 4px;
+            }
+            
+            .tracking-number {
+                font-size: 16px;
+                padding: 12px 16px;
+            }
+
+            .company-logo {
+                font-size: 32px;
+                letter-spacing: 2px;
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <div class="logo-area">
+                <div class="company-logo">{{.company}}</div>
+            </div>
+            <h1>¡Tu pedido está en camino!</h1>
+        </div>
+        
+        <div class="content">
+            <div class="greeting">
+                ¡Hola <strong>{{.customer_name}}</strong>!
+            </div>
+            
+            <div class="description">
+                Excelentes noticias: tu pedido de <strong>{{.company}}</strong> ha sido enviado y está en camino hacia ti. 
+                Puedes seguir su progreso en tiempo real usando el número de rastreo que te proporcionamos a continuación.
+            </div>
+            
+            <div class="tracking-section">
+                <div class="tracking-icon">📦</div>
+                <div>
+                    <p style="font-size: 16px; font-weight: 600; color: #1e40af; margin-bottom: 16px;">
+                        Número de rastreo
+                    </p>
+                    <div class="tracking-number">{{.tracking_number}}</div>
+                    <a href="{{.tracking_url}}" class="cta-button">Rastrear envío</a>
+                </div>
+            </div>
+            
+            <div class="order-info">
+                <div class="order-title">
+                    <span class="order-icon">📋</span>
+                    Detalles del pedido
+                </div>
+                
+                <div class="order-details">
+                    <span class="detail-label">Número de pedido:</span>
+                    <span class="detail-value">{{.order_number}}</span>
+                </div>
+                
+                <div class="order-details">
+                    <span class="detail-label">Fecha de envío:</span>
+                    <span class="detail-value">{{.shipping_date}}</span>
+                </div>
+                
+                <div class="order-details">
+                    <span class="detail-label">Paquetería:</span>
+                    <span class="detail-value">{{.carrier}}</span>
+                </div>
+                
+                <div class="order-details">
+                    <span class="detail-label">Entrega estimada:</span>
+                    <span class="detail-value">{{.estimated_delivery}}</span>
+                </div>
+            </div>
+            
+            <div class="progress-section">
+                <div class="progress-title">
+                    <span class="progress-icon">🛤️</span>
+                    Estado del envío
+                </div>
+                
+                <ul class="progress-steps">
+                    <li class="progress-step completed">Pedido confirmado</li>
+                    <li class="progress-step completed">Preparando para envío</li>
+                    <li class="progress-step current">En tránsito</li>
+                    <li class="progress-step">Fuera para entrega</li>
+                    <li class="progress-step">Entregado</li>
+                </ul>
+            </div>
+            
+            <div class="shipping-details-box">
+                <div class="shipping-details-title">
+                    <span class="shipping-details-icon">📍</span>
+                    Información de entrega
+                </div>
+                <div class="shipping-text">
+                    <strong>Dirección de entrega:</strong><br>
+                    {{.delivery_address}}<br><br>
+                    
+                    <strong>Instrucciones especiales:</strong><br>
+                    {{.delivery_instructions}}<br><br>
+                    
+                    <strong>¿Estarás fuera?</strong> No te preocupes, la paquetería intentará la entrega hasta 3 veces. 
+                    También puedes coordinar una nueva fecha de entrega a través del enlace de rastreo.
+                </div>
+            </div>
+            
+            <div class="contact-section">
+                <div class="contact-title">
+                    <span class="contact-icon">💬</span>
+                    ¿Necesitas ayuda?
+                </div>
+                <div class="contact-text">
+                    Si tienes alguna pregunta sobre tu envío o necesitas hacer algún cambio en la entrega, 
+                    no dudes en contactarnos. Nuestro equipo está listo para ayudarte.
+                    <br><br>
+                    <strong>Email:</strong> <a href="mailto:{{.contact_email}}">{{.contact_email}}</a><br>
+                    <strong>Teléfono:</strong> {{.support_phone}}<br>
+                    <strong>Chat en vivo:</strong> Disponible en nuestro sitio web 24/7
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div class="footer-text">
+                <p>© {{.current_year}} {{.company}}. Todos los derechos reservados.</p>
+                <p>Gracias por elegirnos para tu compra. ¡Esperamos que disfrutes tu pedido!</p>
+                <p><a href="#">Política de privacidad</a> • <a href="#">Términos de servicio</a> • <a href="#">Contacto</a></p>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

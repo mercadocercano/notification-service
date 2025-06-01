@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmación de pedido</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            background-color: #f8f9fa;
+            padding: 40px 20px;
+        }
+        
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            padding: 48px 40px;
+            text-align: center;
+            color: white;
+        }
+        
+        .logo-area {
+            margin-bottom: 24px;
+        }
+        
+        .logo-placeholder {
+            width: 48px;
+            height: 48px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
+        
+        .content {
+            padding: 48px 40px;
+        }
+        
+        .greeting {
+            font-size: 18px;
+            font-weight: 500;
+            color: #1a1a1a;
+            margin-bottom: 24px;
+        }
+        
+        .description {
+            font-size: 16px;
+            color: #4a5568;
+            margin-bottom: 32px;
+            line-height: 1.7;
+        }
+        
+        .order-summary {
+            background-color: #f0fdf4;
+            border: 2px solid #10b981;
+            border-radius: 12px;
+            padding: 32px;
+            margin: 32px 0;
+        }
+        
+        .order-number {
+            background-color: #10b981;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 18px;
+            text-align: center;
+            margin-bottom: 24px;
+            letter-spacing: 1px;
+        }
+        
+        .order-details {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #d1fae5;
+        }
+        
+        .order-details:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .detail-label {
+            font-weight: 600;
+            color: #065f46;
+        }
+        
+        .detail-value {
+            color: #047857;
+            font-weight: 500;
+        }
+        
+        .items-section {
+            background-color: #f8fafc;
+            border-radius: 8px;
+            padding: 24px;
+            margin: 32px 0;
+        }
+        
+        .items-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .items-icon {
+            margin-right: 8px;
+            color: #10b981;
+        }
+        
+        .item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .item:last-child {
+            border-bottom: none;
+        }
+        
+        .item-name {
+            font-weight: 500;
+            color: #1a1a1a;
+        }
+        
+        .item-quantity {
+            font-size: 14px;
+            color: #718096;
+        }
+        
+        .item-price {
+            font-weight: 600;
+            color: #10b981;
+        }
+        
+        .total-section {
+            background-color: #065f46;
+            color: white;
+            padding: 24px;
+            border-radius: 8px;
+            margin: 32px 0;
+        }
+        
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .total-row:last-child {
+            font-size: 20px;
+            font-weight: 700;
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
+            padding-top: 16px;
+            margin-top: 16px;
+            margin-bottom: 0;
+        }
+        
+        .shipping-info {
+            background-color: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 24px;
+            border-radius: 8px;
+            margin: 32px 0;
+        }
+        
+        .shipping-title {
+            font-weight: 600;
+            color: #1e40af;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .shipping-icon {
+            margin-right: 8px;
+            color: #3b82f6;
+        }
+        
+        .shipping-details {
+            font-size: 14px;
+            color: #1e3a8a;
+            line-height: 1.6;
+        }
+        
+        .cta-section {
+            text-align: center;
+            margin: 32px 0;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 16px 32px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+            margin: 0 8px;
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6);
+        }
+        
+        .secondary-button {
+            background: transparent;
+            border: 2px solid #10b981;
+            color: #10b981;
+        }
+        
+        .secondary-button:hover {
+            background: #10b981;
+            color: white;
+        }
+        
+        .support-section {
+            background-color: #fef9c3;
+            border-left: 4px solid #f59e0b;
+            padding: 24px;
+            border-radius: 8px;
+            margin: 32px 0;
+        }
+        
+        .support-title {
+            font-weight: 600;
+            color: #92400e;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .support-icon {
+            margin-right: 8px;
+            color: #f59e0b;
+        }
+        
+        .support-text {
+            font-size: 14px;
+            color: #78350f;
+            line-height: 1.6;
+        }
+        
+        .footer {
+            background-color: #f7fafc;
+            padding: 32px 40px;
+            text-align: center;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .footer-text {
+            font-size: 12px;
+            color: #a0aec0;
+            line-height: 1.5;
+        }
+        
+        .footer-text a {
+            color: #10b981;
+            text-decoration: none;
+        }
+        
+        /* Responsive */
+        @media (max-width: 600px) {
+            body {
+                padding: 20px 10px;
+            }
+            
+            .content, .header {
+                padding: 32px 24px;
+            }
+            
+            .order-summary, .items-section, .shipping-info, .support-section {
+                padding: 24px;
+            }
+            
+            .header h1 {
+                font-size: 24px;
+            }
+            
+            .order-details {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .detail-value {
+                margin-top: 4px;
+            }
+            
+            .item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .item-price {
+                margin-top: 8px;
+            }
+            
+            .cta-button {
+                color: white !important;
+                display: block;
+                margin: 8px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>✅ ¡Pedido confirmado!</h1>
+        </div>
+        
+        <div class="content">
+            <div class="greeting">
+                ¡Hola {{.customer_name}}!
+            </div>
+            
+            <div class="description">
+                Tu pedido ha sido confirmado exitosamente en <strong>{{.company}}</strong>. 
+                Hemos recibido tu solicitud y nuestro equipo está preparando todo para el envío. 
+                Te mantendremos informado sobre el estado de tu pedido.
+            </div>
+            
+            <div class="order-summary">
+                <div class="order-number">
+                    Pedido #{{.order_number}}
+                </div>
+                
+                <div class="order-details">
+                    <span class="detail-label">Fecha del pedido:</span>
+                    <span class="detail-value">{{.order_date}}</span>
+                </div>
+                
+                <div class="order-details">
+                    <span class="detail-label">Estado:</span>
+                    <span class="detail-value">{{.order_status}}</span>
+                </div>
+                
+                <div class="order-details">
+                    <span class="detail-label">Método de pago:</span>
+                    <span class="detail-value">{{.payment_method}}</span>
+                </div>
+            </div>
+            
+            <div class="items-section">
+                <div class="items-title">
+                    <span class="items-icon">📦</span>
+                    Artículos de tu pedido
+                </div>
+                
+                {{range .items}}
+                <div class="item">
+                    <div>
+                        <div class="item-name">{{.name}}</div>
+                        <div class="item-quantity">Cantidad: {{.quantity}}</div>
+                    </div>
+                    <div class="item-price">${{.price}}</div>
+                </div>
+                {{end}}
+            </div>
+            
+            <div class="total-section">
+                <div class="total-row">
+                    <span>Subtotal:</span>
+                    <span>${{.subtotal}}</span>
+                </div>
+                <div class="total-row">
+                    <span>Envío:</span>
+                    <span>${{.shipping_cost}}</span>
+                </div>
+                <div class="total-row">
+                    <span>Impuestos:</span>
+                    <span>${{.taxes}}</span>
+                </div>
+                <div class="total-row">
+                    <span>Total:</span>
+                    <span>${{.total}}</span>
+                </div>
+            </div>
+            
+            <div class="shipping-info">
+                <div class="shipping-title">
+                    <span class="shipping-icon">🚚</span>
+                    Información de envío
+                </div>
+                <div class="shipping-details">
+                    <strong>Dirección de envío:</strong><br>
+                    {{.shipping_address}}<br><br>
+                    <strong>Tiempo estimado de entrega:</strong> {{.estimated_delivery}}<br>
+                    <strong>Método de envío:</strong> {{.shipping_method}}
+                </div>
+            </div>
+            
+            <div class="cta-section">
+                <a href="{{.track_order_url}}" class="cta-button">Rastrear pedido</a>
+                <a href="{{.order_details_url}}" class="cta-button secondary-button">Ver detalles</a>
+            </div>
+            
+            <div class="support-section">
+                <div class="support-title">
+                    <span class="support-icon">💬</span>
+                    ¿Necesitas ayuda?
+                </div>
+                <div class="support-text">
+                    Si tienes alguna pregunta sobre tu pedido o necesitas realizar algún cambio, 
+                    no dudes en contactar a nuestro equipo de atención al cliente. 
+                    Estamos aquí para ayudarte en todo lo que necesites.
+                    <br><br>
+                    <strong>Email:</strong> support@{{.company_domain}}<br>
+                    <strong>Teléfono:</strong> {{.support_phone}}<br>
+                    <strong>Horario:</strong> Lunes a viernes, 9:00 AM - 6:00 PM
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div class="footer-text">
+                <p>© {{.current_year}} {{.company}}. Todos los derechos reservados.</p>
+                <p>Gracias por confiar en nosotros para tu compra.</p>
+                <p><a href="#">Política de privacidad</a> • <a href="#">Términos de servicio</a> • <a href="mailto:{{.contact_email}}">Contacto</a></p>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

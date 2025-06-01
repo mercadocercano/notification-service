@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verifica tu cuenta</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            background-color: #f8f9fa;
+            padding: 40px 20px;
+        }
+        
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 64px 40px 56px 40px;
+            text-align: center;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            opacity: 0.5;
+        }
+        
+        .logo-area {
+            position: relative;
+            z-index: 2;
+            margin-bottom: 32px;
+        }
+        
+        .company-logo {
+            font-size: 42px;
+            font-weight: 900;
+            color: white;
+            margin-bottom: 24px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            line-height: 1.1;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            font-weight: 400;
+            margin: 0;
+            letter-spacing: 0.5px;
+            color: rgba(255, 255, 255, 0.95);
+            position: relative;
+            z-index: 2;
+        }
+        
+        .content {
+            padding: 48px 40px;
+        }
+        
+        .greeting {
+            font-size: 18px;
+            font-weight: 500;
+            color: #1a1a1a;
+            margin-bottom: 24px;
+        }
+        
+        .description {
+            font-size: 16px;
+            color: #4a5568;
+            margin-bottom: 32px;
+            line-height: 1.7;
+        }
+        
+        .verification-section {
+            background-color: #f7fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 32px;
+            text-align: center;
+            margin: 32px 0;
+        }
+        
+        .verification-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 16px;
+        }
+        
+        .verification-code {
+            font-size: 32px;
+            font-weight: 700;
+            color: #2d3748;
+            letter-spacing: 8px;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 16px;
+            padding: 16px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .verification-link {
+            margin: 32px 0;
+            text-align: center;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white !important;
+            padding: 18px 36px;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 16px;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+            border: none;
+            text-transform: uppercase;
+            font-size: 14px;
+            letter-spacing: 1px;
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px rgba(102, 126, 234, 0.4);
+            color: white !important;
+        }
+        
+        .alternative-link {
+            margin-top: 24px;
+            font-size: 14px;
+            color: #718096;
+        }
+        
+        .alternative-link a {
+            color: #667eea;
+            text-decoration: none;
+            word-break: break-all;
+        }
+        
+        .warning-box {
+            background-color: #fffbeb;
+            border-left: 4px solid #f59e0b;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 32px 0;
+        }
+        
+        .warning-box .warning-icon {
+            color: #f59e0b;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        
+        .warning-text {
+            font-size: 14px;
+            color: #92400e;
+            font-weight: 500;
+        }
+        
+        .footer-note {
+            font-size: 14px;
+            color: #718096;
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .footer {
+            background-color: #f7fafc;
+            padding: 32px 40px;
+            text-align: center;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .footer-text {
+            font-size: 12px;
+            color: #a0aec0;
+            line-height: 1.5;
+        }
+        
+        .footer-text a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        /* Responsive */
+        @media (max-width: 600px) {
+            body {
+                padding: 20px 10px;
+            }
+            
+            .content, .header {
+                padding: 48px 24px 40px 24px;
+            }
+            
+            .verification-section {
+                padding: 24px;
+            }
+            
+            .verification-code {
+                font-size: 24px;
+                letter-spacing: 4px;
+            }
+            
+            .header h1 {
+                font-size: 28px;
+            }
+            
+            .company-logo {
+                font-size: 26px;
+                letter-spacing: 2px;
+                margin-bottom: 20px;
+            }
+            
+            .cta-button {
+                padding: 16px 32px;
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <div class="logo-area">
+                <div class="company-logo">{{.company}}</div>
+            </div>
+            <h1>Verifica tu cuenta</h1>
+        </div>
+        
+        <div class="content">
+            <div class="greeting">
+                Hola <strong>{{.name}}</strong>,
+            </div>
+            
+            <div class="description">
+                Para completar el registro de tu cuenta en <strong>{{.company}}</strong>, necesitamos verificar tu dirección de email. 
+                Usa el código de verificación a continuación o haz clic en el botón para verificar automáticamente.
+            </div>
+            
+            <div class="verification-section">
+                <div class="verification-label">Código de verificación</div>
+                <div class="verification-code">{{.token}}</div>
+            </div>
+            
+            {{if .verification_link}}
+            <div class="verification-link">
+                <a href="{{.verification_link}}" class="cta-button">Verificar cuenta ahora</a>
+                
+                <div class="alternative-link">
+                    <p>¿Problemas con el botón? Copia y pega este enlace en tu navegador:</p>
+                    <a href="{{.verification_link}}">{{.verification_link}}</a>
+                </div>
+            </div>
+            {{end}}
+            
+            <div class="warning-box">
+                <span class="warning-icon">⚠️</span>
+                <span class="warning-text">
+                    <strong>Importante:</strong> Este código expira en {{.expiry_time}}. 
+                    Por tu seguridad, no compartas este código con nadie.
+                </span>
+            </div>
+            
+            <div class="footer-note">
+                Si no solicitaste esta verificación, puedes ignorar este email de forma segura. 
+                Tu cuenta permanecerá segura.
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div class="footer-text">
+                <p>© {{.current_year}} {{.company}}. Todos los derechos reservados.</p>
+                <p>Este es un email de verificación automático. Por favor, no respondas a este mensaje.</p>
+                <p><a href="#">Política de privacidad</a> • <a href="#">Términos de servicio</a> • <a href="mailto:{{.contact_email}}">Contacto</a></p>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 
