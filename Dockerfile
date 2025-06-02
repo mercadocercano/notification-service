@@ -1,35 +1,70 @@
-# Build stage
-FROM golang:1.21-alpine AS builder
+# -----------------------------
+# Etapa de compilación (builder)
+# -----------------------------
+    FROM golang:1.24-alpine AS builder
 
-WORKDIR /app
-
-# Copy go mod and sum files
-COPY go.mod go.sum ./
-
-# Download dependencies
-RUN go mod download
-
-# Copy source code
-COPY . .
-
-# Build the application
-RUN go build -o notification-service src/main.go
-
-# Final stage
-FROM alpine:latest
-
-RUN apk --no-cache add ca-certificates
-
-WORKDIR /root/
-
-# Copy the binary from builder stage
-COPY --from=builder /app/notification-service .
-
-# Copy config file
-COPY --from=builder /app/config ./config
-
-# Expose port
-EXPOSE 8282
-
-# Run the binary
-CMD ["./notification-service"] 
+    # Instalar dependencias de build
+    RUN apk add --no-cache git ca-certificates tzdata
+    
+    WORKDIR /app
+    
+    # Copiar go.mod y go.sum para cache
+    COPY go.mod go.sum ./
+    
+    # Descargar dependencias
+    RUN go mod download
+    
+    # Copiar todo el código fuente
+    COPY . .
+    
+    # Compilar la aplicación de forma estática
+    RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+        -ldflags='-w -s -extldflags "-static"' \
+        -a -installsuffix cgo \
+        -o notification-service \
+        ./src/main.go
+    
+    # -----------------------------
+    # Etapa final (runtime)
+    # -----------------------------
+    FROM alpine:latest
+    
+    # Instalar dependencias de runtime, incluyendo wget y curl
+    RUN apk --no-cache add \
+        ca-certificates \
+        tzdata \
+        wget \
+        curl \
+      && update-ca-certificates
+    
+    # Crear usuario no-root
+    RUN addgroup -g 1001 -S appgroup && \
+        adduser -u 1001 -S appuser -G appgroup
+    
+    WORKDIR /app
+    
+    # Copiar el binario compilado y recursos
+    COPY --from=builder /app/notification-service .
+    COPY --from=builder /app/config ./config
+    COPY --from=builder /app/templates ./templates
+    
+    # Crear carpeta de logs y ajustar permisos
+    RUN mkdir -p /app/logs && \
+        chown -R appuser:appgroup /app
+    
+    # Cambiar a usuario no-root
+    USER appuser
+    
+    # Exponer el puerto que utiliza el servicio
+    EXPOSE 8282
+    
+    # Healthcheck: Coolify usará curl o wget para verificar /health
+    HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+        CMD wget --no-verbose --tries=1 --spider http://localhost:8282/health || exit 1
+    
+    # Variables de entorno por defecto (puedes sobreescribirlas en Coolify)
+    ENV SERVER_PORT=8282
+    ENV SERVER_MODE=release
+    
+    # Comando de arranque
+    CMD ["./notification-service"]
