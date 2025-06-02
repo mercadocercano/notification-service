@@ -16,17 +16,20 @@ import (
 )
 
 type NotificationHandler struct {
-	sendNotificationUseCase *usecase.SendNotificationUseCase
-	getNotificationUseCase  *usecase.GetNotificationUseCase
+	sendNotificationUseCase  *usecase.SendNotificationUseCase
+	getNotificationUseCase   *usecase.GetNotificationUseCase
+	listNotificationsUseCase *usecase.ListNotificationsUseCase
 }
 
 func NewNotificationHandler(
 	sendNotificationUseCase *usecase.SendNotificationUseCase,
 	getNotificationUseCase *usecase.GetNotificationUseCase,
+	listNotificationsUseCase *usecase.ListNotificationsUseCase,
 ) *NotificationHandler {
 	return &NotificationHandler{
-		sendNotificationUseCase: sendNotificationUseCase,
-		getNotificationUseCase:  getNotificationUseCase,
+		sendNotificationUseCase:  sendNotificationUseCase,
+		getNotificationUseCase:   getNotificationUseCase,
+		listNotificationsUseCase: listNotificationsUseCase,
 	}
 }
 
@@ -118,11 +121,70 @@ func (handler *NotificationHandler) GetNotificationStatus(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
+// ListNotifications godoc
+// @Summary List notifications
+// @Description Get a list of notifications with optional filters
+// @Tags notifications
+// @Accept json
+// @Produce json
+// @Param type query string false "Notification type (email, sms)"
+// @Param action query string false "Notification action"
+// @Param recipient query string false "Recipient email/phone"
+// @Param status query string false "Notification status"
+// @Param page query int false "Page number (default: 1)"
+// @Param limit query int false "Items per page (max: 100, default: 50)"
+// @Success 200 {object} usecase.ListNotificationsResponse
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /notifications [get]
+func (handler *NotificationHandler) ListNotifications(ctx *gin.Context) {
+	log := logger.GetLogger()
+
+	var listRequest request.ListNotificationsRequest
+
+	// Bind query parameters
+	if err := ctx.ShouldBindQuery(&listRequest); err != nil {
+		log.Error("Error binding query parameters", zap.Error(err))
+		middleware.AbortWithBusinessError(ctx, middleware.ErrInvalidRequestFormat)
+		return
+	}
+
+	log.Info("List notifications request",
+		zap.String("type", listRequest.Type),
+		zap.String("action", listRequest.Action),
+		zap.String("recipient", listRequest.Recipient),
+		zap.String("status", listRequest.Status),
+		zap.Int("page", listRequest.Page),
+		zap.Int("limit", listRequest.Limit))
+
+	// Ejecutar caso de uso
+	response, err := handler.listNotificationsUseCase.Execute(ctx.Request.Context(), &listRequest)
+	if err != nil {
+		log.Error("Error executing list notifications use case", zap.Error(err))
+
+		// Manejar errores de validación
+		if validationErr, ok := err.(request.ValidationError); ok {
+			middleware.AbortWithBusinessError(ctx, middleware.BusinessError{
+				Code:       "VALIDATION_ERROR",
+				Message:    validationErr.Error(),
+				HTTPStatus: http.StatusBadRequest,
+			})
+			return
+		}
+
+		middleware.AbortWithError(ctx, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, response)
+}
+
 // RegisterRoutes registra las rutas del módulo notifications
 func (handler *NotificationHandler) RegisterRoutes(router *gin.RouterGroup) {
 	notificationsGroup := router.Group("/notifications")
 	{
 		notificationsGroup.POST("", handler.SendNotification)
+		notificationsGroup.GET("", handler.ListNotifications) // Nuevo endpoint
 		notificationsGroup.GET("/:id", handler.GetNotificationStatus)
 	}
 }

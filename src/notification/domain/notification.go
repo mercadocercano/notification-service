@@ -72,4 +72,15 @@ type NotificationRepository interface {
 	Update(ctx context.Context, notification *Notification) error
 	UpdateStatus(ctx context.Context, id string, status NotificationStatus, error string) error
 	FindPendingNotifications(ctx context.Context) ([]*Notification, error)
+	FindByFilters(ctx context.Context, filters NotificationFilters) ([]*Notification, error)
+}
+
+// NotificationFilters para filtrar notificaciones
+type NotificationFilters struct {
+	Type      *NotificationType   `json:"type,omitempty"`
+	Action    *NotificationAction `json:"action,omitempty"`
+	Recipient *string             `json:"recipient,omitempty"`
+	Status    *NotificationStatus `json:"status,omitempty"`
+	Limit     int                 `json:"limit,omitempty"`
+	Offset    int                 `json:"offset,omitempty"`
 }
