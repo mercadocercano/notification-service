@@ -58,10 +58,7 @@
     # Exponer el puerto que utiliza el servicio
     EXPOSE 8282
     
-    # Healthcheck: Coolify usará curl o wget para verificar /health
-    HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-        CMD wget --no-verbose --tries=1 --spider http://localhost:8282/health || exit 1
-    
+   
     # Variables de entorno por defecto (puedes sobreescribirlas en Coolify)
     ENV SERVER_PORT=8282
     ENV SERVER_MODE=release
