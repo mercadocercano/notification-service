@@ -27,8 +27,9 @@ Antes de comenzar, asegúrate de tener instalado:
   # Verificar versión de Git
   git --version
   ```
-- Resend API Key (para envío de emails)
+- **Resend API Key (para envío de emails)** - REQUERIDO
   - Obtén tu API Key en [Resend](https://resend.com)
+  - 📖 **Ver guía completa**: [docs/CONFIGURACION_API_KEYS.md](docs/CONFIGURACION_API_KEYS.md)
 
 ## Instalación
 
@@ -44,31 +45,22 @@ Antes de comenzar, asegúrate de tener instalado:
    go mod tidy
    ```
 
-3. **Configurar el servicio**
+3. **Configurar API Keys**
    ```bash
-   # Crear directorio de configuración
-   mkdir -p config
+   # Copiar archivo de ejemplo de variables de entorno
+   cd ../..  # Ir a raíz del proyecto
+   cp .env.example .env
 
-   # Crear archivo de configuración
-   cat > config/config.yaml << EOL
-   server:
-     port: 8282
-     mode: development
-
-   resend:
-     api_key: "tu_api_key_de_resend"
-
-   redis:
-     host: localhost
-     port: 6379
-     password: ""
-     db: 0
-
-   metrics:
-     enabled: true
-     port: 9090
-   EOL
+   # Editar .env y agregar tu RESEND_API_KEY
+   nano .env
+   # O usar tu editor favorito:
+   # code .env
+   # vim .env
    ```
+
+   **⚠️ IMPORTANTE**: Debes configurar `RESEND_API_KEY` con una clave válida de Resend.
+   
+   📖 **Ver guía completa**: [docs/CONFIGURACION_API_KEYS.md](docs/CONFIGURACION_API_KEYS.md)
 
 ## Ejecución
 

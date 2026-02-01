@@ -11,8 +11,8 @@ database:
   ssl_mode: disable
 
 resend:
-  api_key: "your-resend-api-key"
-  from_email: "notifications@yourcompany.com"
+  api_key: ""  # REQUERIDO: Configurar vía RESEND_API_KEY en variables de entorno
+  from_email: "noreply@mercadocercano.com"  # O configurar vía RESEND_FROM_EMAIL
 
 redis:
   host: localhost

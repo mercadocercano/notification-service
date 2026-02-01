@@ -39,9 +39,9 @@ services:
       DATABASE_NAME: notification_service
       DATABASE_SSL_MODE: disable
       
-      # Configuración de Resend (reemplaza con tu API key)
-      RESEND_API_KEY: ${RESEND_API_KEY:-your-resend-api-key}
-      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-onboarding@resend.dev}
+      # Configuración de Resend - REQUERIDO configurar en .env
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-noreply@mercadocercano.com}
       
       # Configuración de SQS (reemplaza con tus valores)
       SQS_ENABLED: ${SQS_ENABLED:-false}
