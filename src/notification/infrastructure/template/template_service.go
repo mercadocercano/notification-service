@@ -24,7 +24,7 @@ func NewTemplateService(templateRepo domain.TemplateRepository) domain.TemplateS
 		// Si no puede cargar config, usar valores por defecto
 		cfg = &config.Config{
 			Contact: config.ContactConfig{
-				Email: "contacto@tiendavecina.com",
+				Email: "contacto@mercadocercano.com",
 			},
 		}
 	}
