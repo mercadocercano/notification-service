@@ -3,7 +3,10 @@ package main
 import (
     "fmt"
     "log"
+    "os"
+
     "github.com/gin-gonic/gin"
+    tenantmw "github.com/mercadocercano/middleware"
     notificationConfig "notification-service/src/notification/infrastructure/config"
     "notification-service/src/shared/config"
     "notification-service/src/shared/logger"
@@ -28,7 +31,14 @@ func main() {
     // Agregar middlewares básicos
     router.Use(gin.Logger())
     router.Use(gin.Recovery())
-    
+    router.Use(tenantmw.TenantValidation(tenantmw.TenantValidationConfig{
+        JWTSecret: os.Getenv("JWT_SECRET"),
+        ExcludedRoutes: []string{
+            "/health",
+            "/metrics",
+        },
+    }))
+
     // Middleware de manejo de errores centralizado
     router.Use(middleware.ErrorHandlerMiddleware())
 
