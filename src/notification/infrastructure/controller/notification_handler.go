@@ -2,9 +2,7 @@ package controller
 
 import (
 	"fmt"
-	"io"
 	"net/http"
-	"strings"
 
 	"notification-service/src/notification/application/request"
 	"notification-service/src/notification/application/usecase"
@@ -47,13 +45,6 @@ func NewNotificationHandler(
 func (handler *NotificationHandler) SendNotification(ctx *gin.Context) {
 	log := logger.GetLogger()
 
-	// Log del body raw
-	body, _ := ctx.GetRawData()
-	log.Info("Raw request body", zap.String("body", string(body)))
-
-	// Rebuild el context para que ShouldBindJSON pueda leer el body
-	ctx.Request.Body = io.NopCloser(strings.NewReader(string(body)))
-
 	var request request.SendNotificationRequest
 
 	// Validación de binding JSON
@@ -69,8 +60,7 @@ func (handler *NotificationHandler) SendNotification(ctx *gin.Context) {
 
 	log.Info("Request bound successfully",
 		zap.String("type", request.Type),
-		zap.String("action", request.Action),
-		zap.String("recipient", request.Recipient))
+		zap.String("action", request.Action))
 
 	// Ejecutar caso de uso
 	result := handler.sendNotificationUseCase.Execute(ctx.Request.Context(), &request)
@@ -152,7 +142,6 @@ func (handler *NotificationHandler) ListNotifications(ctx *gin.Context) {
 	log.Info("List notifications request",
 		zap.String("type", listRequest.Type),
 		zap.String("action", listRequest.Action),
-		zap.String("recipient", listRequest.Recipient),
 		zap.String("status", listRequest.Status),
 		zap.Int("page", listRequest.Page),
 		zap.Int("limit", listRequest.Limit))
