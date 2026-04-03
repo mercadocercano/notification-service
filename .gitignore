@@ -49,3 +49,11 @@ Thumbs.db
 notification-service
 dist/
 build/
+
+# Build artifacts
+tmp/
+.cache/
+.config/
+.gitconfig
+*-management/
+.cursorrules

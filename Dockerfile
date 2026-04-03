@@ -30,9 +30,52 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     ./src/main.go
 
 # -----------------------------
-# Etapa final (runtime)
+# Etapa de desarrollo (development)
 # -----------------------------
-FROM alpine:latest
+FROM golang:1.24-alpine AS development
+
+RUN apk add --no-cache ca-certificates tzdata curl git \
+    && cp /usr/share/zoneinfo/UTC /etc/localtime \
+    && echo "UTC" > /etc/timezone
+
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -S -D -h /app -s /bin/sh -G appgroup -u 1001 appuser
+
+# Install Air for hot reload
+RUN go install github.com/cosmtrek/air@v1.49.0
+
+WORKDIR /app
+
+# Configure private Go modules
+ARG GITHUB_TOKEN
+ENV GOPRIVATE=github.com/mercadocercano/*
+RUN if [ -n "$GITHUB_TOKEN" ]; then git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"; fi
+
+# Copy go mod files first (for better caching)
+COPY --chown=appuser:appgroup go.mod go.sum ./
+RUN go mod download
+
+# Copy source code
+COPY --chown=appuser:appgroup . .
+
+# Create directories and fix permissions for Air + Go mod cache
+RUN mkdir -p tmp logs /go/pkg/mod && \
+    chmod -R 777 /go/pkg && \
+    chown -R appuser:appgroup /app tmp logs
+
+USER appuser
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8282/health || exit 1
+
+EXPOSE 8282
+
+CMD sh -c 'if [ -n "$GITHUB_TOKEN" ]; then git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"; fi && air -c .air.toml'
+
+# -----------------------------
+# Etapa final (runtime/production)
+# -----------------------------
+FROM alpine:latest AS production
 
 # Instalar dependencias de runtime, incluyendo wget y curl
 RUN apk --no-cache add \
