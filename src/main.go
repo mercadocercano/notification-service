@@ -1,80 +1,88 @@
 package main
 
 import (
-    "fmt"
-    "log"
-    "os"
+	"fmt"
+	"log"
+	"os"
 
-    "github.com/gin-gonic/gin"
-    tenantmw "github.com/hornosg/go-shared/infrastructure/middleware"
-    notificationConfig "notification-service/src/notification/infrastructure/config"
-    "notification-service/src/shared/config"
-    "notification-service/src/shared/logger"
-    "notification-service/src/shared/middleware"
+	"github.com/gin-gonic/gin"
+	tenantmw "github.com/hornosg/go-shared/infrastructure/middleware"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	notificationConfig "notification-service/src/notification/infrastructure/config"
+	"notification-service/src/shared/config"
+	"notification-service/src/shared/logger"
+	"notification-service/src/shared/middleware"
 )
 
 func main() {
-    // Cargar configuración
-    cfg, err := config.LoadConfig()
-    if err != nil {
-        log.Fatal("Failed to load config:", err)
-    }
+	// Cargar configuración
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Fatal("Failed to load config:", err)
+	}
 
-    // Inicializar logger
-    if err := logger.InitLogger(); err != nil {
-        log.Fatal("Failed to initialize logger:", err)
-    }
+	// Inicializar logger
+	if err := logger.InitLogger(); err != nil {
+		log.Fatal("Failed to initialize logger:", err)
+	}
 
-    // Configuración del router
-    router := gin.New()
+	// Configuración del router
+	router := gin.New()
 
-    // Agregar middlewares básicos
-    router.Use(gin.Logger())
-    router.Use(gin.Recovery())
-    router.Use(tenantmw.TenantValidation(tenantmw.TenantValidationConfig{
-        JWTSecret: os.Getenv("JWT_SECRET"),
-        ExcludedRoutes: []string{
-            "/health",
+	// Agregar middlewares básicos
+	router.Use(gin.Logger())
+	router.Use(gin.Recovery())
+	router.Use(tenantmw.TenantValidation(tenantmw.TenantValidationConfig{
+		JWTSecret: os.Getenv("JWT_SECRET"),
+		ExcludedRoutes: []string{
+			"/health",
 			"/api/v1/health",
-            "/metrics",
-        },
-    }))
+			"/metrics",
+		},
+	}))
 
-    // Middleware de manejo de errores centralizado
-    router.Use(middleware.ErrorHandlerMiddleware())
+	// Middleware de manejo de errores centralizado
+	router.Use(middleware.ErrorHandlerMiddleware())
 
-    // Configuración de CORS
-    router.Use(func(c *gin.Context) {
-        c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-        c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-        c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+	// Configuración de CORS
+	router.Use(func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
-        if c.Request.Method == "OPTIONS" {
-            c.AbortWithStatus(204)
-            return
-        }
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
 
-        c.Next()
-    })
+		c.Next()
+	})
 
-    // Health check endpoint
-    router.GET("/health", func(c *gin.Context) {
-        c.JSON(200, gin.H{
-            "status":  "up",
-            "service": "notification-service",
-        })
-    })
+	// Health check endpoint
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status":  "up",
+			"service": "notification-service",
+		})
+	})
 
-    // API v1 group
-    apiV1 := router.Group("/api/v1")
+	// Metrics endpoint (Prometheus). Excluido del tenant middleware via ExcludedRoutes.
+	// Sirve el default registry donde metrics.go registra los collectors via promauto.
+	if cfg.Metrics.Enabled {
+		log.Println("Registering /metrics endpoint")
+		router.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	}
 
-    // Configurar módulo de notificaciones
-    notificationConfig.SetupNotificationModule(apiV1, cfg)
+	// API v1 group
+	apiV1 := router.Group("/api/v1")
 
-    // Iniciar el servidor
-    port := fmt.Sprintf(":%d", cfg.Server.Port)
-    log.Printf("Starting notification service on port %d...", cfg.Server.Port)
-    if err := router.Run(port); err != nil {
-        log.Fatal("Failed to start server:", err)
-    }
-} 
+	// Configurar módulo de notificaciones
+	notificationConfig.SetupNotificationModule(apiV1, cfg)
+
+	// Iniciar el servidor
+	port := fmt.Sprintf(":%d", cfg.Server.Port)
+	log.Printf("Starting notification service on port %d...", cfg.Server.Port)
+	if err := router.Run(port); err != nil {
+		log.Fatal("Failed to start server:", err)
+	}
+}
