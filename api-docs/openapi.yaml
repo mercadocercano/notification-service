@@ -1,0 +1,555 @@
+openapi: 3.0.3
+info:
+  title: notification-service
+  version: 1.0.0
+  description: >-
+    Servicio de notificaciones email/SMS con plantillas del ecosistema
+    mercado-cercano. Correo vía Resend; envío síncrono o asíncrono (SQS).
+    Multi-tenant: requiere JWT Bearer + header X-Tenant-ID en los endpoints
+    de negocio y operativos.
+
+servers:
+  - url: /api/v1
+    description: Base URL para la API v1
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT para autenticación
+    TenantHeader:
+      type: apiKey
+      in: header
+      name: X-Tenant-ID
+      description: ID del tenant para operaciones multi-tenant
+
+  parameters:
+    TenantIdHeader:
+      name: X-Tenant-ID
+      in: header
+      required: true
+      description: ID del tenant para operaciones multi-tenant
+      schema:
+        type: string
+
+  schemas:
+    # Espeja github.com/hornosg/go-shared infrastructure/response.ErrorResponse
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        details:
+          type: string
+      required:
+        - error
+
+    SendNotificationRequest:
+      type: object
+      required:
+        - type
+        - action
+        - recipient
+      properties:
+        notification_id:
+          type: string
+          description: Identificador opcional, usado internamente para SQS
+        type:
+          type: string
+          description: Canal de la notificación
+          enum: [email, sms]
+        action:
+          type: string
+          description: Acción/plantilla de la notificación
+          enum:
+            - WELCOME
+            - EMAIL_VERIFICATION
+            - PASSWORD_RESET
+            - ORDER_CONFIRMATION
+            - SHIPPING_NOTIFICATION
+            - ORDER_CANCELLATION
+            - PAYMENT_REMINDER
+        recipient:
+          type: string
+          description: Destinatario (email o teléfono según el type)
+        data:
+          type: object
+          additionalProperties: true
+          description: Datos para renderizar la plantilla
+        async:
+          type: boolean
+          description: Si es true y SQS está habilitada, se encola el envío
+          default: false
+
+    SendNotificationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        message:
+          type: string
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    GetNotificationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        recipient:
+          type: string
+        status:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    NotificationDTO:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        action:
+          type: string
+        recipient:
+          type: string
+        status:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    PaginationMetadata:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        has_more:
+          type: boolean
+
+    FiltersSummary:
+      type: object
+      properties:
+        type:
+          type: string
+        action:
+          type: string
+        recipient:
+          type: string
+        status:
+          type: string
+
+    ListNotificationsResponse:
+      type: object
+      properties:
+        notifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationDTO'
+        pagination:
+          $ref: '#/components/schemas/PaginationMetadata'
+        filters:
+          $ref: '#/components/schemas/FiltersSummary'
+
+    MigrationResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        executed_migrations:
+          type: array
+          items:
+            type: string
+        error:
+          type: string
+
+    MigrationStatusResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ready
+        message:
+          type: string
+        endpoints:
+          type: object
+          additionalProperties:
+            type: string
+
+    QueueStatusResponse:
+      type: object
+      properties:
+        queue_size:
+          type: integer
+        worker_running:
+          type: boolean
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: up
+        service:
+          type: string
+          example: notification-service
+
+tags:
+  - name: notifications
+    description: Endpoints de negocio para envío y consulta de notificaciones
+  - name: operations
+    description: Endpoints operativos/internos (migraciones y monitoreo de cola)
+  - name: system
+    description: Endpoints públicos de salud y métricas
+
+paths:
+  /notifications:
+    post:
+      summary: Send notification
+      description: Envía una notificación vía email u otros canales (síncrono o asíncrono)
+      tags: [notifications]
+      security:
+        - BearerAuth: []
+          TenantHeader: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendNotificationRequest'
+      responses:
+        '200':
+          description: Notificación procesada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendNotificationResponse'
+        '400':
+          description: Datos de entrada inválidos (formato, email o tipo de notificación)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: No autenticado (token JWT ausente o inválido)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Tenant no autorizado (X-Tenant-ID ausente o inválido)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      summary: List notifications
+      description: Lista notificaciones con filtros opcionales y paginación
+      tags: [notifications]
+      security:
+        - BearerAuth: []
+          TenantHeader: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - name: type
+          in: query
+          description: Tipo de notificación
+          required: false
+          schema:
+            type: string
+            enum: [email, sms]
+        - name: action
+          in: query
+          description: Acción de la notificación
+          required: false
+          schema:
+            type: string
+        - name: recipient
+          in: query
+          description: Destinatario (email/teléfono)
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: Estado de la notificación
+          required: false
+          schema:
+            type: string
+            enum: [pending, sent, failed, retrying, queued]
+        - name: page
+          in: query
+          description: "Número de página (default: 1)"
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: "Items por página (default: 50, max: 100)"
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: Lista paginada de notificaciones
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListNotificationsResponse'
+        '400':
+          description: Parámetros de filtrado inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: No autenticado (token JWT ausente o inválido)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Tenant no autorizado (X-Tenant-ID ausente o inválido)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /notifications/{id}:
+    get:
+      summary: Get notification status
+      description: Obtiene el estado de una notificación específica por su ID
+      tags: [notifications]
+      security:
+        - BearerAuth: []
+          TenantHeader: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+        - name: id
+          in: path
+          required: true
+          description: ID de la notificación
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Notificación encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetNotificationResponse'
+        '400':
+          description: ID de notificación requerido o inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: No autenticado (token JWT ausente o inválido)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Tenant no autorizado (X-Tenant-ID ausente o inválido)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Notificación no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /migrations:
+    post:
+      summary: Run database migrations
+      description: Ejecuta las migraciones de base de datos pendientes (operativo/interno)
+      tags: [operations]
+      security:
+        - BearerAuth: []
+          TenantHeader: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      responses:
+        '200':
+          description: Migraciones ejecutadas exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MigrationResult'
+        '401':
+          description: No autenticado (token JWT ausente o inválido)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Tenant no autorizado (X-Tenant-ID ausente o inválido)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error ejecutando migraciones
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MigrationResult'
+
+  /migrations/status:
+    get:
+      summary: Get migration status
+      description: Obtiene el estado actual de las migraciones de base de datos (operativo/interno)
+      tags: [operations]
+      security:
+        - BearerAuth: []
+          TenantHeader: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      responses:
+        '200':
+          description: Estado de migraciones
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MigrationStatusResponse'
+        '401':
+          description: No autenticado (token JWT ausente o inválido)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Tenant no autorizado (X-Tenant-ID ausente o inválido)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /queue/status:
+    get:
+      summary: Get queue status
+      description: >-
+        Obtiene el estado de la cola SQS y del worker (operativo/interno).
+        Sólo disponible cuando SQS está habilitada.
+      tags: [operations]
+      security:
+        - BearerAuth: []
+          TenantHeader: []
+      parameters:
+        - $ref: '#/components/parameters/TenantIdHeader'
+      responses:
+        '200':
+          description: Estado de la cola y del worker
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueueStatusResponse'
+        '401':
+          description: No autenticado (token JWT ausente o inválido)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Tenant no autorizado (X-Tenant-ID ausente o inválido)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error obteniendo el tamaño de la cola
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /health:
+    servers:
+      - url: /
+        description: Endpoint público de salud (fuera del prefijo /api/v1)
+    get:
+      summary: Health check
+      description: Verifica que el servicio esté operativo. Público, sin autenticación.
+      tags: [system]
+      security: []
+      responses:
+        '200':
+          description: Servicio operativo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /metrics:
+    servers:
+      - url: /
+        description: Endpoint público de métricas Prometheus (fuera del prefijo /api/v1)
+    get:
+      summary: Prometheus metrics
+      description: Expone las métricas en formato Prometheus. Público, sin autenticación.
+      tags: [system]
+      security: []
+      responses:
+        '200':
+          description: Métricas en formato de texto Prometheus
+          content:
+            text/plain:
+              schema:
+                type: string
