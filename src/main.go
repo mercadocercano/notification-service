@@ -6,7 +6,7 @@ import (
     "os"
 
     "github.com/gin-gonic/gin"
-    tenantmw "github.com/mercadocercano/middleware"
+    tenantmw "github.com/hornosg/go-shared/infrastructure/middleware"
     notificationConfig "notification-service/src/notification/infrastructure/config"
     "notification-service/src/shared/config"
     "notification-service/src/shared/logger"

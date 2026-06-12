@@ -1,7 +1,7 @@
 # -----------------------------
 # Etapa de compilación (builder)
 # -----------------------------
-FROM golang:1.24-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 # Instalar dependencias de build
 RUN apk add --no-cache git ca-certificates tzdata
@@ -32,7 +32,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
 # -----------------------------
 # Etapa de desarrollo (development)
 # -----------------------------
-FROM golang:1.24-alpine AS development
+FROM golang:1.25-alpine AS development
 
 RUN apk add --no-cache ca-certificates tzdata curl git \
     && cp /usr/share/zoneinfo/UTC /etc/localtime \
@@ -41,8 +41,7 @@ RUN apk add --no-cache ca-certificates tzdata curl git \
 RUN addgroup -g 1001 -S appgroup && \
     adduser -S -D -h /app -s /bin/sh -G appgroup -u 1001 appuser
 
-# Install Air for hot reload
-RUN go install github.com/cosmtrek/air@v1.49.0
+RUN go install github.com/air-verse/air@v1.61.7
 
 WORKDIR /app
 
