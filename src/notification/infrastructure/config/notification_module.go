@@ -17,7 +17,7 @@ import (
 	"notification-service/src/shared/config"
 
 	"github.com/gin-gonic/gin"
-	_ "github.com/lib/pq"
+	"github.com/hornosg/go-shared/infrastructure/postgres"
 )
 
 // SetupNotificationModule configura el módulo de notificaciones
@@ -144,25 +144,22 @@ func setupQueueMonitoringRoutes(router *gin.RouterGroup, sqsWorker *worker.SQSWo
 
 // initDatabase inicializa la conexión a PostgreSQL
 func initDatabase(cfg *config.Config) (*sql.DB, error) {
-	// Construir string de conexión
-	connStr := "host=" + cfg.Database.Host +
-		" port=" + cfg.Database.Port +
-		" user=" + cfg.Database.User +
-		" password=" + cfg.Database.Password +
-		" dbname=" + cfg.Database.Name +
-		" sslmode=" + cfg.Database.SSLMode
-
-	// Abrir conexión
-	db, err := sql.Open("postgres", connStr)
+	db, err := postgres.Connect(postgres.Config{
+		Host:     cfg.Database.Host,
+		Port:     cfg.Database.Port,
+		User:     cfg.Database.User,
+		Password: cfg.Database.Password,
+		DBName:   cfg.Database.Name,
+		SSLMode:  cfg.Database.SSLMode,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	// Verificar conexión
-	if err = db.Ping(); err != nil {
-		db.Close()
-		return nil, err
-	}
+	postgres.StartPoolMonitor(context.Background(), db, postgres.MonitorOptions{
+		Service: "notification-service",
+		DBName:  cfg.Database.Name,
+	})
 
 	log.Printf("Successfully connected to PostgreSQL database")
 	return db, nil
