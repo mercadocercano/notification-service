@@ -1,25 +1,26 @@
 version: '3.8'
 
+# notification-service — compose para desarrollo aislado.
+# Conectado al lab compartido (lab-network). Requiere infra corriendo: make -C ~/Projects infra
+# NO usar `up -d` junto con el compose root (este usa container_names propios para evitar choque).
+
 services:
-  postgres:
-    image: postgres:15-alpine
-    container_name: notification_postgres
+  # ---------------------------------------------------------------------------
+  # Setup: crea la DB del servicio en el postgres compartido (idempotente)
+  # ---------------------------------------------------------------------------
+  postgres-setup:
+    image: pgvector/pgvector:pg15
+    container_name: notification_postgres_setup
     environment:
-      POSTGRES_DB: notification_service
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./migrations:/docker-entrypoint-initdb.d
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      PGPASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    command: >
+      sh -c "
+        echo 'Creating notification database...' &&
+        psql -h lab-postgres -U ${POSTGRES_USER:-postgres} -c 'CREATE DATABASE notification_service;' || true &&
+        echo 'Database ready.'
+      "
     networks:
-      - notification-network
+      - lab-network
 
   notification-service:
     build:
@@ -30,38 +31,37 @@ services:
       # Configuración del servidor
       SERVER_PORT: 8282
       SERVER_MODE: release
-      
-      # Configuración de la base de datos
-      DATABASE_HOST: postgres
+
+      # Configuración de la base de datos (postgres compartido del lab)
+      DATABASE_HOST: lab-postgres
       DATABASE_PORT: 5432
-      DATABASE_USER: postgres
-      DATABASE_PASSWORD: postgres
+      DATABASE_USER: ${POSTGRES_USER:-postgres}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       DATABASE_NAME: notification_service
       DATABASE_SSL_MODE: disable
-      
+
       # Configuración de Resend - REQUERIDO configurar en .env
       RESEND_API_KEY: ${RESEND_API_KEY}
       RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-noreply@mercadocercano.com}
-      
+
       # Configuración de SQS (reemplaza con tus valores)
       SQS_ENABLED: ${SQS_ENABLED:-false}
       SQS_QUEUE_URL: ${SQS_QUEUE_URL:-}
       SQS_REGION: ${SQS_REGION:-us-east-1}
-      
+
       # Credenciales AWS (opcional si usas IAM roles)
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
       AWS_REGION: ${AWS_REGION:-us-east-1}
-      
+
       # Configuración de métricas
-      METRICS_ENABLED: true
+      METRICS_ENABLED: "true"
       METRICS_PORT: 9090
     ports:
       - "8282:8282"
       - "9090:9090"  # Puerto de métricas
     depends_on:
-      postgres:
-        condition: service_healthy
+      - postgres-setup
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8282/api/v1/health"]
       interval: 30s
@@ -69,12 +69,9 @@ services:
       retries: 3
       start_period: 40s
     networks:
-      - notification-network
+      - lab-network
     restart: unless-stopped
 
-volumes:
-  postgres_data:
-
 networks:
-  notification-network:
-    driver: bridge 
+  lab-network:
+    external: true
