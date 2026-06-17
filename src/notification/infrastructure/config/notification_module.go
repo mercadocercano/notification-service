@@ -9,6 +9,7 @@ import (
 	"notification-service/src/notification/domain"
 	"notification-service/src/notification/infrastructure/controller"
 	"notification-service/src/notification/infrastructure/email"
+	notificationlog "notification-service/src/notification/infrastructure/logging"
 	"notification-service/src/notification/infrastructure/queue"
 	"notification-service/src/notification/infrastructure/repository"
 	"notification-service/src/notification/infrastructure/template"
@@ -76,6 +77,9 @@ func SetupNotificationModule(router *gin.RouterGroup, cfg *config.Config) {
 		log.Printf("SQS is disabled, async notifications will not work")
 	}
 
+	// Inicializar logger canónico de dominio (ADR-001)
+	eventLogger := notificationlog.NewNotificationLogger("notification-service")
+
 	// Inicializar casos de uso
 	sendNotificationUseCase := usecase.NewSendNotificationUseCase(
 		notificationRepo,
@@ -83,7 +87,7 @@ func SetupNotificationModule(router *gin.RouterGroup, cfg *config.Config) {
 		emailSender,
 		queueService, // Ahora puede ser SQS o nil
 		emailValidator,
-	)
+	).WithEventLogger(eventLogger)
 
 	getNotificationUseCase := usecase.NewGetNotificationUseCase(
 		notificationRepo,

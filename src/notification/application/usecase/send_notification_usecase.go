@@ -8,6 +8,7 @@ import (
 	"notification-service/src/notification/application/request"
 	"notification-service/src/notification/application/response"
 	"notification-service/src/notification/domain"
+	"notification-service/src/notification/domain/port"
 	"notification-service/src/notification/ports/output"
 	"notification-service/src/shared/logger"
 
@@ -23,6 +24,7 @@ type SendNotificationUseCase struct {
 	emailSender      output.EmailSender
 	queue            output.Queue
 	emailValidator   *validator.EmailValidator
+	eventLogger      port.NotificationEventLogger
 }
 
 func NewSendNotificationUseCase(
@@ -41,11 +43,24 @@ func NewSendNotificationUseCase(
 	}
 }
 
+// WithEventLogger inyecta el logger canónico de dominio (ADR-001). Nil-safe — si no se llama,
+// los eventos de dominio se omiten silenciosamente.
+func (uc *SendNotificationUseCase) WithEventLogger(l port.NotificationEventLogger) *SendNotificationUseCase {
+	uc.eventLogger = l
+	return uc
+}
+
+// logEvent emite un evento canónico si hay logger inyectado (nil-safe).
+func (uc *SendNotificationUseCase) logEvent(e port.NotificationEvent) {
+	if uc.eventLogger != nil {
+		uc.eventLogger.Log(e)
+	}
+}
+
 func (uc *SendNotificationUseCase) Execute(ctx context.Context, req *request.SendNotificationRequest) *response.SendNotificationResult {
 
 	log.Info("Starting notification processing",
 		zap.String("type", req.Type),
-		zap.String("recipient", req.Recipient),
 		zap.String("action", req.Action),
 		zap.Bool("async", req.Async))
 
@@ -54,6 +69,12 @@ func (uc *SendNotificationUseCase) Execute(ctx context.Context, req *request.Sen
 		log.Warn("Request validation failed",
 			zap.String("error_code", validationResult.Error.Code),
 			zap.String("error_message", validationResult.Error.Message))
+		uc.logEvent(port.NotificationEvent{
+			Event:            "notification.validation_failed",
+			NotificationType: req.Type,
+			Action:           req.Action,
+			Reason:           validationResult.Error.Code,
+		})
 		return validationResult
 	}
 
@@ -73,6 +94,11 @@ func (uc *SendNotificationUseCase) Execute(ctx context.Context, req *request.Sen
 		log.Info("Template validation skipped - using fallback mechanism",
 			zap.String("action", req.Action),
 			zap.String("type", req.Type))
+		uc.logEvent(port.NotificationEvent{
+			Event:            "notification.template_not_found",
+			NotificationType: req.Type,
+			Action:           req.Action,
+		})
 	}
 
 	// 3. Crear notificación
@@ -99,6 +125,13 @@ func (uc *SendNotificationUseCase) Execute(ctx context.Context, req *request.Sen
 			log.Error("Failed to save notification",
 				zap.String("notification_id", notification.ID),
 				zap.Error(err))
+			uc.logEvent(port.NotificationEvent{
+				Event:            "notification.save_failed",
+				NotificationID:   notification.ID,
+				NotificationType: string(notification.Type),
+				Action:           string(notification.Action),
+				Reason:           err.Error(),
+			})
 			return response.NewInternalServerError("Error al guardar notificación: " + err.Error())
 		}
 		log.Debug("Notification saved successfully")
@@ -116,6 +149,13 @@ func (uc *SendNotificationUseCase) Execute(ctx context.Context, req *request.Sen
 				log.Error("Failed to enqueue notification",
 					zap.String("notification_id", notification.ID),
 					zap.Error(err))
+				uc.logEvent(port.NotificationEvent{
+					Event:            "notification.enqueue_failed",
+					NotificationID:   notification.ID,
+					NotificationType: string(notification.Type),
+					Action:           string(notification.Action),
+					Reason:           err.Error(),
+				})
 				return response.NewInternalServerError("Error al encolar notificación: " + err.Error())
 			}
 			log.Debug("Notification enqueued successfully")
@@ -123,6 +163,12 @@ func (uc *SendNotificationUseCase) Execute(ctx context.Context, req *request.Sen
 			log.Warn("Queue is nil, cannot enqueue notification")
 		}
 		notification.Status = domain.StatusQueued
+		uc.logEvent(port.NotificationEvent{
+			Event:            "notification.queued",
+			NotificationID:   notification.ID,
+			NotificationType: string(notification.Type),
+			Action:           string(notification.Action),
+		})
 	} else {
 		log.Info("Processing notification synchronously")
 		// Envío síncrono
@@ -131,6 +177,13 @@ func (uc *SendNotificationUseCase) Execute(ctx context.Context, req *request.Sen
 				zap.String("notification_id", notification.ID),
 				zap.String("action", string(notification.Action)),
 				zap.Error(err))
+			uc.logEvent(port.NotificationEvent{
+				Event:            "notification.send_failed",
+				NotificationID:   notification.ID,
+				NotificationType: string(notification.Type),
+				Action:           string(notification.Action),
+				Reason:           err.Error(),
+			})
 			notification.Status = domain.StatusFailed
 			if uc.notificationRepo != nil {
 				uc.notificationRepo.Update(ctx, notification)
@@ -139,6 +192,12 @@ func (uc *SendNotificationUseCase) Execute(ctx context.Context, req *request.Sen
 		}
 		log.Info("Notification sent successfully", zap.String("notification_id", notification.ID))
 		notification.Status = domain.StatusSent
+		uc.logEvent(port.NotificationEvent{
+			Event:            "notification.sent",
+			NotificationID:   notification.ID,
+			NotificationType: string(notification.Type),
+			Action:           string(notification.Action),
+		})
 	}
 
 	// 6. Actualizar estado
@@ -150,6 +209,13 @@ func (uc *SendNotificationUseCase) Execute(ctx context.Context, req *request.Sen
 			log.Error("Failed to update notification status",
 				zap.String("notification_id", notification.ID),
 				zap.Error(err))
+			uc.logEvent(port.NotificationEvent{
+				Event:            "notification.update_failed",
+				NotificationID:   notification.ID,
+				NotificationType: string(notification.Type),
+				Action:           string(notification.Action),
+				Reason:           err.Error(),
+			})
 			return response.NewInternalServerError("Error al actualizar notificación: " + err.Error())
 		}
 		log.Debug("Notification status updated successfully")
