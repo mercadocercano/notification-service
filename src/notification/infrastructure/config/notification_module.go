@@ -17,8 +17,11 @@ import (
 	"notification-service/src/notification/ports/output"
 	"notification-service/src/shared/config"
 
+	notificationservice "notification-service"
+
 	"github.com/gin-gonic/gin"
 	"github.com/hornosg/go-shared/infrastructure/postgres"
+	sharedmigrate "github.com/hornosg/go-shared/migrate"
 )
 
 // SetupNotificationModule configura el módulo de notificaciones
@@ -28,6 +31,14 @@ func SetupNotificationModule(router *gin.RouterGroup, cfg *config.Config) {
 	if err != nil {
 		log.Printf("Warning: Could not connect to database: %v", err)
 		log.Printf("Template repository will be nil")
+	}
+
+	// Migraciones versionadas in-app (ADR-001) — reemplaza el migrador casero
+	// (MigrationUseCase + endpoint /api/v1/migrations), fail-fast antes de servir.
+	if db != nil {
+		if err := sharedmigrate.RunMigrations(db, notificationservice.MigrationsFS, cfg.Database.Name); err != nil {
+			log.Fatalf("Error running migrations: %v", err)
+		}
 	}
 
 	// Inicializar repositorios
@@ -97,24 +108,12 @@ func SetupNotificationModule(router *gin.RouterGroup, cfg *config.Config) {
 		notificationRepo,
 	)
 
-	// Inicializar caso de uso de migraciones
-	var migrationUseCase *usecase.MigrationUseCase
-	if db != nil {
-		migrationUseCase = usecase.NewMigrationUseCase(db)
-	}
-
 	// Inicializar y registrar handlers
 	notificationHandler := controller.NewNotificationHandler(
 		sendNotificationUseCase,
 		getNotificationUseCase,
 		listNotificationsUseCase,
 	)
-
-	// Registrar handler de migraciones si la BD está disponible
-	if migrationUseCase != nil {
-		migrationHandler := controller.NewMigrationHandler(migrationUseCase)
-		migrationHandler.RegisterRoutes(router)
-	}
 
 	// Registrar rutas de notificaciones
 	notificationHandler.RegisterRoutes(router)

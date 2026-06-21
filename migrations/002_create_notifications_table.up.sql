@@ -1,4 +1,3 @@
--- +migrate Up
 -- Crear tabla notifications
 CREATE TABLE IF NOT EXISTS notifications (
     id VARCHAR(36) PRIMARY KEY,
@@ -22,16 +21,3 @@ CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications (recipie
 CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications (created_at);
 CREATE INDEX IF NOT EXISTS idx_notifications_status_created ON notifications (status, created_at);
 CREATE INDEX IF NOT EXISTS idx_notifications_pending ON notifications (status) WHERE status = 'pending';
-
--- +migrate Down
--- Eliminar índices
-DROP INDEX IF EXISTS idx_notifications_pending;
-DROP INDEX IF EXISTS idx_notifications_status_created;
-DROP INDEX IF EXISTS idx_notifications_created_at;
-DROP INDEX IF EXISTS idx_notifications_recipient;
-DROP INDEX IF EXISTS idx_notifications_status;
-DROP INDEX IF EXISTS idx_notifications_action;
-DROP INDEX IF EXISTS idx_notifications_type;
-
--- Eliminar tabla notifications
-DROP TABLE IF EXISTS notifications; 

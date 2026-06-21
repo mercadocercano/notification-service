@@ -1,4 +1,3 @@
--- +migrate Up
 -- Crear tabla templates
 CREATE TABLE IF NOT EXISTS templates (
     id VARCHAR(36) PRIMARY KEY,
@@ -25,14 +24,5 @@ INSERT INTO templates (id, name, subject, file_path, action, type, version, is_a
 ('template-verification-001', 'verification_email', 'Verificación de email', './templates/email/verification_email.html', 'EMAIL_VERIFICATION', 'email', 1, true),
 ('template-password-reset-001', 'password_reset_email', 'Recuperación de contraseña', './templates/email/password_reset.html', 'PASSWORD_RESET', 'email', 1, true),
 ('template-order-confirmation-001', 'order_confirmation_email', 'Confirmación de pedido', './templates/email/order_confirmation.html', 'ORDER_CONFIRMATION', 'email', 1, true),
-('template-shipping-notification-001', 'shipping_notification_email', 'Tu pedido ha sido enviado', './templates/email/shipping_notification.html', 'SHIPPING_NOTIFICATION', 'email', 1, true);
-
--- +migrate Down
--- Eliminar índices
-DROP INDEX IF EXISTS idx_templates_created_at;
-DROP INDEX IF EXISTS idx_templates_active;
-DROP INDEX IF EXISTS idx_templates_action_type_version;
-DROP INDEX IF EXISTS idx_templates_action_type;
-
--- Eliminar tabla templates
-DROP TABLE IF EXISTS templates; 
+('template-shipping-notification-001', 'shipping_notification_email', 'Tu pedido ha sido enviado', './templates/email/shipping_notification.html', 'SHIPPING_NOTIFICATION', 'email', 1, true)
+ON CONFLICT (id) DO NOTHING;
