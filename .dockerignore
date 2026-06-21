@@ -39,8 +39,8 @@ docs/
 # Postman
 postman/
 
-# Migraciones (ya están en el docker-compose)
-migrations/
+# Migraciones: se EMBEBEN en el binario (//go:embed en migrations_embed.go, ADR-001).
+# NO excluir migrations/ — el build las necesita en el contexto.
 
 # Base de datos local
 *.db
