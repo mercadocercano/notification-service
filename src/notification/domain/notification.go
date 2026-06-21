@@ -31,6 +31,8 @@ const (
 
 type Notification struct {
 	ID         string
+	Namespace  string // proyecto (IDP). Default 'mc'. Scope de nivel superior.
+	TenantID   string // tenant dentro del proyecto (puede ser vacío para notifs de plataforma).
 	Type       NotificationType
 	Action     NotificationAction
 	TemplateID string
@@ -39,6 +41,7 @@ type Notification struct {
 	Status     NotificationStatus
 	RetryCount int
 	Error      string
+	DedupKey   string // idempotencia: event_id (eventos) o Idempotency-Key/hash (API sync). Vacío = sin dedup.
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 }
@@ -73,6 +76,9 @@ type NotificationRepository interface {
 	UpdateStatus(ctx context.Context, id string, status NotificationStatus, error string) error
 	FindPendingNotifications(ctx context.Context) ([]*Notification, error)
 	FindByFilters(ctx context.Context, filters NotificationFilters) ([]*Notification, error)
+	// ExistsByDedupKey es el backstop de idempotencia en DB (respaldo del UNIQUE index y
+	// del nonce de Redis). Scopeado por (namespace, tenant_id). dedupKey vacío → siempre false.
+	ExistsByDedupKey(ctx context.Context, namespace, tenantID, dedupKey string) (bool, error)
 }
 
 // NotificationFilters para filtrar notificaciones

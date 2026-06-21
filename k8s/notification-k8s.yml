@@ -64,6 +64,26 @@ spec:
               value: "6379"
             - name: METRICS_ENABLED
               value: "true"
+            # EventBus consumer (Plan F1, ingestión event-driven). Apunta a la DB `eventbus`
+            # compartida con los publishers (misma instancia Postgres que ledger-service).
+            # El worker es best-effort: si la DB no responde, loguea y sigue (no tira el pod).
+            - name: EVENTBUS_ENABLED
+              value: "true"
+            - name: EVENTBUS_DB_HOST
+              value: "postgres"
+            - name: EVENTBUS_DB_PORT
+              value: "5432"
+            - name: EVENTBUS_DB_USER
+              value: "postgres"
+            - name: EVENTBUS_DB_NAME
+              value: "eventbus"
+            - name: EVENTBUS_DB_SSL_MODE
+              value: "disable"
+            - name: EVENTBUS_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secrets
+                  key: POSTGRES_PASSWORD
           resources:
             requests:
               cpu: "50m"

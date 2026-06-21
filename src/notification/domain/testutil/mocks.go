@@ -57,6 +57,11 @@ func (m *MockNotificationRepository) FindByFilters(ctx context.Context, filters 
 	return args.Get(0).([]*domain.Notification), args.Error(1)
 }
 
+func (m *MockNotificationRepository) ExistsByDedupKey(ctx context.Context, namespace, tenantID, dedupKey string) (bool, error) {
+	args := m.Called(ctx, namespace, tenantID, dedupKey)
+	return args.Bool(0), args.Error(1)
+}
+
 // MockTemplateRepository implementa domain.TemplateRepository para tests
 type MockTemplateRepository struct {
 	mock.Mock

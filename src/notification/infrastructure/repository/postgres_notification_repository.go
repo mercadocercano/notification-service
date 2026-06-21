@@ -25,6 +25,41 @@ func NewPostgresNotificationRepository(db *sql.DB) domain.NotificationRepository
 	}
 }
 
+// nullIfEmpty mapea "" → NULL para columnas nullable (tenant_id, dedup_key).
+func nullIfEmpty(s string) interface{} {
+	if s == "" {
+		return nil
+	}
+	return s
+}
+
+// ExistsByDedupKey backstop de idempotencia en DB. Respaldo del nonce de Redis y del
+// UNIQUE index parcial (namespace, COALESCE(tenant_id,''), dedup_key). dedupKey vacío → false.
+func (r *postgresNotificationRepository) ExistsByDedupKey(ctx context.Context, namespace, tenantID, dedupKey string) (bool, error) {
+	if dedupKey == "" {
+		return false, nil
+	}
+	if namespace == "" {
+		namespace = "mc"
+	}
+
+	query := `
+		SELECT EXISTS (
+			SELECT 1 FROM notifications
+			WHERE namespace = $1 AND COALESCE(tenant_id, '') = $2 AND dedup_key = $3
+		)
+	`
+
+	var exists bool
+	if err := r.db.QueryRowContext(ctx, query, namespace, tenantID, dedupKey).Scan(&exists); err != nil {
+		r.logger.Error("Error checking dedup key existence",
+			zap.String("dedup_key", dedupKey),
+			zap.Error(err))
+		return false, fmt.Errorf("error checking dedup key: %w", err)
+	}
+	return exists, nil
+}
+
 func (r *postgresNotificationRepository) Save(ctx context.Context, notification *domain.Notification) error {
 	r.logger.Debug("Saving notification to PostgreSQL",
 		zap.String("id", notification.ID),
@@ -32,8 +67,8 @@ func (r *postgresNotificationRepository) Save(ctx context.Context, notification 
 		zap.String("action", string(notification.Action)))
 
 	query := `
-		INSERT INTO notifications (id, type, action, template_id, recipient, data, status, retry_count, error_message, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		INSERT INTO notifications (id, namespace, tenant_id, type, action, template_id, recipient, data, status, retry_count, error_message, dedup_key, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 	`
 
 	// Convertir data a JSON
@@ -47,8 +82,15 @@ func (r *postgresNotificationRepository) Save(ctx context.Context, notification 
 	notification.CreatedAt = now
 	notification.UpdatedAt = now
 
+	namespace := notification.Namespace
+	if namespace == "" {
+		namespace = "mc" // default del proyecto actual (coincide con el DEFAULT de la columna)
+	}
+
 	_, err = r.db.ExecContext(ctx, query,
 		notification.ID,
+		namespace,
+		nullIfEmpty(notification.TenantID),
 		notification.Type,
 		notification.Action,
 		notification.TemplateID,
@@ -57,6 +99,7 @@ func (r *postgresNotificationRepository) Save(ctx context.Context, notification 
 		notification.Status,
 		notification.RetryCount,
 		notification.Error,
+		nullIfEmpty(notification.DedupKey),
 		notification.CreatedAt,
 		notification.UpdatedAt,
 	)

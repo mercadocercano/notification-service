@@ -9,7 +9,9 @@ require (
 	github.com/hornosg/go-shared v0.14.0
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.9
+	github.com/mercadocercano/eventbus v0.1.0
 	github.com/prometheus/client_golang v1.22.0
+	github.com/redis/go-redis/v9 v9.20.1
 	github.com/resendlabs/resend-go v1.7.0
 	github.com/spf13/viper v1.15.0
 	github.com/stretchr/testify v1.11.1
@@ -50,7 +52,6 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.62.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	github.com/redis/go-redis/v9 v9.20.1 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect

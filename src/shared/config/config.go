@@ -15,6 +15,7 @@ type Config struct {
 	Metrics  MetricsConfig
 	Contact  ContactConfig
 	SQS      SQSConfig
+	EventBus EventBusConfig
 }
 
 type ServerConfig struct {
@@ -58,6 +59,19 @@ type SQSConfig struct {
 	Enabled  bool   `mapstructure:"enabled"`
 }
 
+// EventBusConfig apunta a la DB del EventBus PostgreSQL (compartida con los publishers).
+// Enabled gatea el arranque del worker consumer: opt-in en prod recién cuando los secrets
+// EVENTBUS_DB_* estén cableados, para no crashear/colgar el pod antes.
+type EventBusConfig struct {
+	Enabled  bool   `mapstructure:"enabled"`
+	Host     string `mapstructure:"host"`
+	Port     string `mapstructure:"port"`
+	User     string `mapstructure:"user"`
+	Password string `mapstructure:"password"`
+	Name     string `mapstructure:"name"`
+	SSLMode  string `mapstructure:"ssl_mode"`
+}
+
 func LoadConfig() (*Config, error) {
 	// Cargar variables de entorno desde .env si existe
 	if err := godotenv.Load(); err != nil {
@@ -94,6 +108,14 @@ func LoadConfig() (*Config, error) {
 	viper.BindEnv("sqs.queue_url", "SQS_QUEUE_URL")
 	viper.BindEnv("sqs.region", "SQS_REGION")
 	viper.BindEnv("sqs.enabled", "SQS_ENABLED")
+
+	viper.BindEnv("eventbus.enabled", "EVENTBUS_ENABLED")
+	viper.BindEnv("eventbus.host", "EVENTBUS_DB_HOST")
+	viper.BindEnv("eventbus.port", "EVENTBUS_DB_PORT")
+	viper.BindEnv("eventbus.user", "EVENTBUS_DB_USER")
+	viper.BindEnv("eventbus.password", "EVENTBUS_DB_PASSWORD")
+	viper.BindEnv("eventbus.name", "EVENTBUS_DB_NAME")
+	viper.BindEnv("eventbus.ssl_mode", "EVENTBUS_DB_SSL_MODE")
 
 	// Intentar cargar config.yaml como fallback
 	viper.SetConfigName("config")

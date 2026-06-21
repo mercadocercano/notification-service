@@ -25,6 +25,7 @@ type SendNotificationUseCase struct {
 	queue            output.Queue
 	emailValidator   *validator.EmailValidator
 	eventLogger      port.NotificationEventLogger
+	deduplicator     output.Deduplicator
 }
 
 func NewSendNotificationUseCase(
@@ -50,11 +51,55 @@ func (uc *SendNotificationUseCase) WithEventLogger(l port.NotificationEventLogge
 	return uc
 }
 
+// WithDeduplicator inyecta el fast-path de dedup (Redis). Nil-safe — si no se llama,
+// la idempotencia recae en el backstop de DB (ExistsByDedupKey + UNIQUE index).
+func (uc *SendNotificationUseCase) WithDeduplicator(d output.Deduplicator) *SendNotificationUseCase {
+	uc.deduplicator = d
+	return uc
+}
+
 // logEvent emite un evento canónico si hay logger inyectado (nil-safe).
 func (uc *SendNotificationUseCase) logEvent(e port.NotificationEvent) {
 	if uc.eventLogger != nil {
 		uc.eventLogger.Log(e)
 	}
+}
+
+// isDuplicate aplica la idempotencia cuando el request trae dedup_key. Orden:
+//  1. backstop DB (durable: captura triggers ya persistidos / replay tras restart)
+//  2. nonce Redis (fast-path in-flight, patrón Xu)
+//
+// Los errores de cualquiera de los dos checks NO bloquean el envío (best-effort): el
+// UNIQUE index parcial en `notifications` es el backstop final ante una carrera.
+func (uc *SendNotificationUseCase) isDuplicate(ctx context.Context, req *request.SendNotificationRequest) bool {
+	if req.DedupKey == "" {
+		return false
+	}
+	namespace := req.Namespace
+	if namespace == "" {
+		namespace = "mc"
+	}
+
+	if uc.notificationRepo != nil {
+		exists, err := uc.notificationRepo.ExistsByDedupKey(ctx, namespace, req.TenantID, req.DedupKey)
+		if err != nil {
+			log.Warn("Dedup DB check failed, continuing (UNIQUE index is final backstop)",
+				zap.String("dedup_key", req.DedupKey), zap.Error(err))
+		} else if exists {
+			return true
+		}
+	}
+
+	if uc.deduplicator != nil {
+		fresh, err := uc.deduplicator.MarkIfNew(ctx, namespace+":"+req.TenantID+":"+req.DedupKey)
+		if err != nil {
+			log.Warn("Dedup Redis check failed, continuing", zap.Error(err))
+		} else if !fresh {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (uc *SendNotificationUseCase) Execute(ctx context.Context, req *request.SendNotificationRequest) *response.SendNotificationResult {
@@ -76,6 +121,24 @@ func (uc *SendNotificationUseCase) Execute(ctx context.Context, req *request.Sen
 			Reason:           validationResult.Error.Code,
 		})
 		return validationResult
+	}
+
+	// 1.5 Dedup (idempotencia): si el trigger trae dedup_key y ya fue procesado, skip no-op.
+	if uc.isDuplicate(ctx, req) {
+		log.Info("Duplicate notification skipped",
+			zap.String("action", req.Action),
+			zap.String("dedup_key", req.DedupKey))
+		uc.logEvent(port.NotificationEvent{
+			Event:            "notification.dedup_skip",
+			TenantID:         req.TenantID,
+			NotificationType: req.Type,
+			Action:           req.Action,
+		})
+		return response.NewSendNotificationSuccess(&response.SendNotificationResponse{
+			Message:   "Notification skipped (duplicate)",
+			Status:    "skipped",
+			CreatedAt: time.Now(),
+		})
 	}
 
 	// 2. Obtener y validar template
@@ -102,13 +165,20 @@ func (uc *SendNotificationUseCase) Execute(ctx context.Context, req *request.Sen
 	}
 
 	// 3. Crear notificación
+	namespace := req.Namespace
+	if namespace == "" {
+		namespace = "mc"
+	}
 	notification := &domain.Notification{
 		ID:        uuid.New().String(),
+		Namespace: namespace,
+		TenantID:  req.TenantID,
 		Type:      domain.NotificationType(req.Type),
 		Action:    domain.NotificationAction(req.Action),
 		Recipient: req.Recipient,
 		Status:    domain.StatusPending,
 		Data:      req.Data,
+		DedupKey:  req.DedupKey,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
